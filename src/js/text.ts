@@ -14,3 +14,7 @@ export function currency(credits: number): string {
   let formatter = new Intl.NumberFormat();
   return `${formatter.format(credits)} ${'\u2124'}`
 }
+
+export function date(text: string): string {
+  return new Date(text).toLocaleDateString('en-us', {year: "numeric", month: "numeric", day: "numeric", second: "2-digit", minute: "2-digit", hour: "2-digit"});
+}

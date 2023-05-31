@@ -2,6 +2,11 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Text } from "../../js";
 
+const SCALE = 10;
+const MAX_ZOOM = 2;
+const MIN_ZOOM = 0.5;
+const SCROLL_SENSITIVITY = 0.0005;
+
 class SolarObject {
   constructor(context, x, y, radius, color, hide, symbol, type) {
     this.context = context;
@@ -39,11 +44,7 @@ export function SystemMap({system}) {
       let width = 500;
       let height = 500;
       let cameraOffset = { x: width/2, y: height/2};
-      let cameraZoom = 1;
-      const MAX_ZOOM = 3;
-      const MIN_ZOOM = 0.5;
-      const SCROLL_SENSITIVITY = 0.0005;
-      const SCALE = 5;
+      let cameraZoom = MIN_ZOOM;
       const solarObjects = [];
 
       let isDragging = false;
@@ -55,43 +56,41 @@ export function SystemMap({system}) {
       const centerX = width/2;
       const centerY = height/2;
 
-      let sun = new SolarObject(context, centerX, centerY, 10, "yellow", false, system.symbol, system.type);
+      let sun = new SolarObject(context, centerX, centerY, 30, "yellow", false, system.symbol, system.type);
       solarObjects.push(sun);
       system.waypoints.forEach((waypoint) => {
         const x = centerX + (waypoint.x * SCALE);
         const y = centerY + (waypoint.y * SCALE);
         let object = null;
         if (waypoint.type == "PLANET") {
-          object = new SolarObject(context, x, y, 5, "#4363d8", false, waypoint.symbol, waypoint.type);
+          object = new SolarObject(context, x, y, 10, "#4363d8", false, waypoint.symbol, waypoint.type);
         } else if (waypoint.type == "GAS_GIANT") {
-          object = new SolarObject(context, x, y, 5, "#3cb44b", false, waypoint.symbol, waypoint.type);
+          object = new SolarObject(context, x, y, 10, "#3cb44b", false, waypoint.symbol, waypoint.type);
         } else if (waypoint.type == "MOON") {
-          object = new SolarObject(context, x, y, 5, "#f58231", true, waypoint.symbol, waypoint.type);
+          object = new SolarObject(context, x, y, 10, "#f58231", true, waypoint.symbol, waypoint.type);
         } else if (waypoint.type == "ORBITAL_STATION") {
-          object = new SolarObject(context, x, y, 5, "#ffffff", true, waypoint.symbol, waypoint.type);
+          object = new SolarObject(context, x, y, 10, "#ffffff", true, waypoint.symbol, waypoint.type);
         } else if (waypoint.type == "JUMP_GATE") {
-          object = new SolarObject(context, x, y, 5, "#aaffc3", false, waypoint.symbol, waypoint.type);
+          object = new SolarObject(context, x, y, 10, "#aaffc3", false, waypoint.symbol, waypoint.type);
         } else if (waypoint.type == "ASTEROID_FIELD") {
-          object = new SolarObject(context, x, y, 5, "#9A6324", false, waypoint.symbol, waypoint.type);
+          object = new SolarObject(context, x, y, 10, "#9A6324", false, waypoint.symbol, waypoint.type);
         } else if (waypoint.type == "NEBULA") {
-          object = new SolarObject(context, x, y, 5, "#469990", false, waypoint.symbol, waypoint.type);
+          object = new SolarObject(context, x, y, 10, "#469990", false, waypoint.symbol, waypoint.type);
         } else if (waypoint.type == "DEBRIS_FIELD") {
-          object = new SolarObject(context, x, y, 5, "#808000", false, waypoint.symbol, waypoint.type);
+          object = new SolarObject(context, x, y, 10, "#808000", false, waypoint.symbol, waypoint.type);
         } else if (waypoint.type == "GRAVITY_WELL") {
-          object = new SolarObject(context, x, y, 5, "#000000", false, waypoint.symbol, waypoint.type);
+          object = new SolarObject(context, x, y, 10, "#000000", false, waypoint.symbol, waypoint.type);
         } else {
-          object = new SolarObject(context, x, y, 5, "#800000", false, waypoint.symbol, waypoint.type);
+          object = new SolarObject(context, x, y, 10, "#800000", false, waypoint.symbol, waypoint.type);
         }
         solarObjects.push(object);
       });
-      solarObjects.forEach(object => {
-        console.log(object.symbol, object.x, object.y, object.radius, object.type);
-      })
 
       function draw() {
         canvas.width = width;
         canvas.height = height;
 
+        // context.translate(width/2, height/2);
         context.scale(cameraZoom, cameraZoom);
         context.translate(-width/2 + cameraOffset.x, -height/2 + cameraOffset.y)
         context.clearRect(0, 0, width, height);
@@ -140,8 +139,8 @@ export function SystemMap({system}) {
         x = x;
         y = y;
         let cursor = { x: x * SCALE + 250, y: y * SCALE + 250 };
-        textLocation.x = cursor.x + 10;
-        textLocation.y = cursor.y + 30;
+        textLocation.x = cursor.x + (10 / cameraZoom);
+        textLocation.y = cursor.y + (30 / cameraZoom);
         cursorText = '';
         solarObjects.map((object) => {
           if ((cursor.x <= object.x + object.radius && cursor.x >= object.x - object.radius) &&
@@ -156,7 +155,11 @@ export function SystemMap({system}) {
         })
         if (isDragging) {
           cameraOffset.x = getEventLocation(e).x / cameraZoom - dragStart.x;
+          cameraOffset.x = Math.min(cameraOffset.x, width*2);
+          cameraOffset.x = Math.max(cameraOffset.x, -width/2);
           cameraOffset.y = getEventLocation(e).y / cameraZoom - dragStart.y;
+          cameraOffset.y = Math.min(cameraOffset.y, height*2);
+          cameraOffset.y = Math.max(cameraOffset.y, -height/2);
         }
       }
 
@@ -165,9 +168,6 @@ export function SystemMap({system}) {
         x = x;
         y = y;
         let cursor = { x: x * SCALE + 250, y: y * SCALE + 250 };
-        textLocation.x = cursor.x + 10;
-        textLocation.y = cursor.y + 30;
-        cursorText = '';
         solarObjects.map((object) => {
           if ((cursor.x <= object.x + object.radius && cursor.x >= object.x - object.radius) &&
               (cursor.y <= object.y + object.radius && cursor.y >= object.y - object.radius) &&
@@ -221,12 +221,10 @@ export function SystemMap({system}) {
   }, [])
   
   return (
-    <div className="block mx-4">
-      <canvas
-        id="system-canvas"
-        className="bg-[#1d1e22]"
-        ref={canvasRef}
-      />
-    </div>
+    <canvas
+      id="system-canvas"
+      className="bg-[#1d1e22]"
+      ref={canvasRef}
+    />
   )
 }

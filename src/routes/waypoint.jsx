@@ -1,7 +1,7 @@
 import {useParams} from 'react-router-dom';
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from 'react';
-import { SessionStorage, Text } from '../js';
+import { Storage, Text } from '../js';
 import Tag from '../components/Tag';
 import { NavLink } from "react-router-dom";
 
@@ -15,7 +15,7 @@ export default function Waypoint() {
   }, [systemId, waypointId]);
 
   async function get_waypoint() {
-    invoke("get_waypoint", { token: SessionStorage.getSessionToken(), system: systemId, waypoint: waypointId}).then((response) => {
+    invoke("get_waypoint", { token: Storage.getSessionToken(), system: systemId, waypoint: waypointId}).then((response) => {
       setWaypoint(response.data);
       setWaypointTraits(response.data.traits);
     })
@@ -25,7 +25,7 @@ export default function Waypoint() {
     <div>
       {waypoint && waypoint.type? (
         <div>
-          <h1 className='text-center text-2xl'>{waypoint.symbol} ({Text.capitalize(waypoint.type)})</h1>
+          <h1 className='text-center text-4xl'>{waypoint.symbol} ({Text.capitalize(waypoint.type)})</h1>
           <hr className='mb-5'/>
           <div className='w-full text-center mb-5'>
             {waypointTraits && Array.isArray(waypointTraits)? (
@@ -34,23 +34,28 @@ export default function Waypoint() {
               ))
             ): <></>}
           </div>
-          <ul>
-            <li>System: <NavLink to={`/system/${systemId}`}>{systemId}</NavLink></li>
+          <div className='flex'>
+            <NavLink to={`/system/${systemId}`}>
+              <span className='block p-2 mb-2 bg-[#4b5563] hover:bg-[#2b3e58] shadow-md rounded-md select-none mr-2'>System: {systemId}</span>
+            </NavLink>
             {waypoint.faction? 
-            <li>Faction: <NavLink to={`/faction/${waypoint.faction.symbol}`}>
-              {waypoint.faction.symbol}</NavLink></li>
+            <NavLink to={`/faction/${waypoint.faction.symbol}`}>
+              <span className='block p-2 mb-2 bg-[#4b5563] hover:bg-[#2b3e58] shadow-md rounded-md select-none mr-2'>Faction: {waypoint.faction.symbol}</span>
+            </NavLink>
             : <></>}
-            <li>Coordinates: ({waypoint.x},{waypoint.y})</li>
-          </ul>
+            <span className='block p-2 mb-2 bg-[#4b5563] shadow-md rounded-md select-none'>Coordinates: ({waypoint.x},{waypoint.y})</span>
+          </div>
           {waypoint.orbitals && Array.isArray(waypoint.orbitals) && waypoint.orbitals.length > 0? (
             <div>
               <hr className='my-2'/>
-              <h2 className='text-xl'>Orbitals</h2>
-              <ul>
+              <h2 className='text-xl'>In Orbit</h2>
+              <div className='flex'>
                 {waypoint.orbitals.map((orbital, index) => (
-                  <li key={index} className='pl-4'><NavLink to={`/system/${systemId}/${orbital.symbol}`}>{orbital.symbol}</NavLink></li>
+                  <NavLink key={index} to={`/system/${systemId}/${orbital.symbol}`}>
+                    <span className='block p-2 mb-2 bg-[#4b5563] hover:bg-[#2b3e58] shadow-md rounded-md select-none mr-2'>{orbital.symbol}</span>
+                  </NavLink>
                 ))}
-              </ul>
+              </div>
             </div> 
           ): <></>}
           <div className='w-full flex'>
@@ -69,53 +74,132 @@ export default function Waypoint() {
 
 function Marketplace({systemId, waypointId}) {
   const [market, setMarket] = useState({});
+  const [transactions, setTransactions] = useState([]);
 
   useEffect(() => {
     get_market();
   }, [systemId, waypointId]);
 
   async function get_market() {
-    invoke("get_market", { token: SessionStorage.getSessionToken(), system: systemId, waypoint: waypointId}).then((response) => {
+    invoke("get_market", { token: Storage.getSessionToken(), system: systemId, waypoint: waypointId}).then((response) => {
       setMarket(response.data);
+
+      let t = response.data.transactions;
+      let transactions = [];
+      t.forEach(transaction => {
+        transactions.push([
+          transaction.shipSymbol,
+          transaction.shipSymbol,
+          transaction.shipSymbol,
+          transaction.shipSymbol,
+          transaction.shipSymbol,
+          transaction.shipSymbol,
+          transaction.shipSymbol
+        ]);
+      });
+      setTransactions(transactions);
     });
   }
 
   return (
     <>
       {market && market.symbol? (
-        <div className='w-full mx-2'>
-        <hr className='my-2'/>
-        <h1 className='text-center text-xl'>Marketplace</h1>
-        {market.transactions && Array.isArray(market.transactions)? (
-          <div>
-            <h2>Transactions</h2>
-            <table>
-              <tr>
-                <th>Type</th>
-                <th>Ship</th>
-                <th>Trade Good</th>
-                <th>Amount</th>
-                <th>Price</th>
-                <th>Total Price</th>
-                <th>Timestamp</th>
-              </tr>
-              {market.transactions.map((transaction, index) => (
-                <tr key={index}>
-                  <td>{Text.capitalize(transaction.type)}</td>
-                  <td>{transaction.shipSymbol}</td>
-                  <td>{Text.capitalize(transaction.tradeSymbol)}</td>
-                  <td>{transaction.units}</td>
-                  <td>{transaction.pricePerUnit}</td>
-                  <td>{transaction.totalPrice}</td>
-                  <td>{transaction.timestamp}</td>
-                </tr>
-              ))}
-            </table>
+        <div className='block p-4 shadow-md rounded-lg border bg-stone-800 border-stone-900'>
+          <h1 className='text-center text-2xl'>Marketplace</h1>
+          <hr className='my-2'/>
+          <div className='flex justify-center'>
+          {market.transactions && Array.isArray(market.transactions)? (
+            <div className='mx-2'>
+              <h2 className='text-center text-lg'>Transactions</h2>
+              <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
+                <thead className='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
+                  <tr>
+                    <th scope='col' className='px-6 py-3'>Trade Good</th>
+                    <th scope='col' className='px-6 py-3'>Ship</th>
+                    <th scope='col' className='px-6 py-3'>Type</th>
+                    <th scope='col' className='px-6 py-3'>Amount</th>
+                    <th scope='col' className='px-6 py-3'>Price</th>
+                    <th scope='col' className='px-6 py-3'>Total Price</th>
+                    <th scope='col' className='px-6 py-3'>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {market.transactions.map((transaction, index) => (
+                    <tr key={index} className='bg-white border-b dark:bg-gray-800 dark:border-gray-700'>
+                      <th scope='row' className='px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white'>{Text.capitalize(transaction.tradeSymbol)}</th>
+                      <td className='px-6 py-4'>{transaction.shipSymbol}</td>
+                      <td className='px-6 py-4'>{Text.capitalize(transaction.type)}</td>
+                      <td className='px-6 py-4'>{transaction.units}</td>
+                      <td className='px-6 py-4'>{Text.currency(transaction.pricePerUnit)}</td>
+                      <td className='px-6 py-4'>{Text.currency(transaction.totalPrice)}</td>
+                      <td className='px-6 py-4'>{Text.date(transaction.timestamp)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ): <></>}
+          {market.tradeGoods && Array.isArray(market.tradeGoods)? (
+            <div className='mx-2'>
+              <h2 className='text-center text-lg'>Trade Goods</h2>
+              <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
+                <thead className='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
+                  <tr>
+                    <th scope='col' className='px-6 py-3'>Trade Good</th>
+                    <th scope='col' className='px-6 py-3'>Volume</th>
+                    <th scope='col' className='px-6 py-3'>Supply</th>
+                    <th scope='col' className='px-6 py-3'>Purchase Price</th>
+                    <th scope='col' className='px-6 py-3'>Sell Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {market.tradeGoods.map((good, index) => (
+                    <tr key={index} className='bg-white border-b dark:bg-gray-800 dark:border-gray-700'>
+                      <th scope='row' className='px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white'>{Text.capitalize(good.symbol)}</th>
+                      <td className='px-6 py-4'>{good.tradeVolume}</td>
+                      <td className='px-6 py-4'>{Text.capitalize(good.supply)}</td>
+                      <td className='px-6 py-4'>{Text.currency(good.purchasePrice)}</td>
+                      <td className='px-6 py-4'>{Text.currency(good.sellPrice)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ): <></>}
           </div>
-        ): <></>}
-      </div>
+        </div>
       ): <></>}
     </>
+  )
+}
+
+function Table({title, headers, rows}) {
+  return (
+    <div>
+      <h2 className='text-center text-lg'>{title}</h2>
+      <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
+        <thead className='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
+          <tr>
+            {headers.map((header, index) => (
+              <th key={index} scope='col' className='px-6 py-3'>{header}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => {
+            <tr key={index} className='bg-white border-b dark:bg-gray-800 dark:border-gray-700'>
+              {row.map((field, _index) => (
+                <>
+                  {_index == 0? (
+                    <th key={`${index}_${_index}`} scope='row' className='px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white'>{field}</th>
+                  ): <td key={`${index}_${_index}`} className='px-6 py-4'>{field}</td>}
+                </>
+              ))}
+            </tr>
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
@@ -127,7 +211,7 @@ function Shipyard({systemId, waypointId}) {
   }, [systemId, waypointId]);
 
   async function get_shipyard() {
-    invoke("get_shipyard", { token: SessionStorage.getSessionToken(), system: systemId, waypoint: waypointId}).then((response) => {
+    invoke("get_shipyard", { token: Storage.getSessionToken(), system: systemId, waypoint: waypointId}).then((response) => {
       setShipyard(response.data);
     });
   }

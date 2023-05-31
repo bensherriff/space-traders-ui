@@ -10,8 +10,8 @@ pub mod requests;
 pub mod systems;
 
 #[tauri::command]
-pub async fn get_status(token: String) -> ResponseObject<Status> {
-  handle_result(get_request::<Status>(token, "/".to_string(), None).await)
+pub async fn get_status() -> ResponseObject<Status> {
+  handle_result(get_request::<Status>("".to_string(), "/".to_string(), None).await)
 }
 
 #[tauri::command]

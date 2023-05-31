@@ -1,23 +1,26 @@
 import { useEffect, useState } from "react";
-import { SessionStorage, Text } from "../../js";
+import { Storage, Text } from "../../js";
 import { NavLink } from "react-router-dom";
 
 export default function Header() {
-  const [agent, setAgent] = useState(SessionStorage.getSessionAgent());
+  const [agent, setAgent] = useState(Storage.getSessionAgent());
 
   useEffect(() => {
-    setAgent(SessionStorage.getSessionAgent());
+    setAgent(Storage.getSessionAgent());
   }, [])
 
   let split = agent.headquarters.split("-");
   let system = `${split[0]}-${split[1]}`;
 
   return (
-    <header className="border-b mb-2 bg-blue-900">
+    <header className="h-14 border-b border-slate-900 mb-2 bg-sky-900 shadow-md">
       <ul className="flex justify-between px-4">
         <HeaderItem text={agent.symbol} to={"/fleet"} />
         <HeaderItem text={Text.currency(agent.credits)}/>
-        <HeaderItem text={agent.headquarters} to={`/system/${system}/${agent.headquarters}`} />
+        <div className="flex">
+          <HeaderItem text={agent.headquarters} to={`/system/${system}/${agent.headquarters}`} />
+          <HeaderItem text={`(${system})`} to={`/system/${system}`} />
+        </div>
         <HeaderItem text={agent.startingFaction} to={`/faction/${agent.startingFaction}`} />
       </ul>
     </header>
@@ -27,14 +30,14 @@ export default function Header() {
 function HeaderItem({ text, to }) {
   if (to) {
     return (
-      <li className="mr-3">
-        <NavLink className="inline-block px-4 py-4 text-gray-200 select-none text-xl" to={to}>{text}</NavLink>
+      <li className="">
+        <NavLink className="inline-block px-2 py-3 text-gray-200 select-none text-xl" to={to}>{text}</NavLink>
       </li>
     )  
   }
   return (
-    <li className="mr-3">
-      <h1 className="inline-block px-4 py-4 text-gray-200 select-none text-xl">{text}</h1>
+    <li className="">
+      <h1 className="inline-block px-2 py-3 text-gray-200 select-none text-xl">{text}</h1>
     </li>
   )
 }

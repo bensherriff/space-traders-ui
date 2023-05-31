@@ -1,7 +1,7 @@
 import {useParams} from 'react-router-dom';
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from 'react';
-import { getSessionToken } from '../js/sessionStorage';
+import { getSessionToken } from '../js/storage';
 import Tag from '../components/Tag';
 
 export default function Faction() {
