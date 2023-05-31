@@ -31,14 +31,16 @@ export default function System() {
           </ul>
           {system.waypoints && Array.isArray(system.waypoints)? (
             <div className=''>
-              <SystemMap system={system}/>
               <hr className='my-2'/>
-              <h2 className='text-xl'>Waypoints</h2>
-              <ul>
-                {system.waypoints.map((waypoint, index) => (
-                  <li key={index} className='pl-4'><NavLink to={`/system/${systemId}/${waypoint.symbol}`}>{Text.capitalize(waypoint.type)} {waypoint.symbol} ({waypoint.x},{waypoint.y})</NavLink></li>
-                ))}
-              </ul>
+              <h2 className='text-xl'>System Map</h2>
+              <div className='flex justify-center m-2'>
+                <SystemMap system={system}/>
+                <ul className='block mx-4'>
+                  {system.waypoints.map((waypoint, index) => (
+                    <li key={index} className=''><NavLink to={`/system/${systemId}/${waypoint.symbol}`}>{Text.capitalize(waypoint.type)} {waypoint.symbol} ({waypoint.x},{waypoint.y})</NavLink></li>
+                  ))}
+                </ul>
+              </div>
             </div>
           ): <></>}
         </div>
