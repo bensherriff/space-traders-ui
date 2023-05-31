@@ -119,7 +119,7 @@ function Marketplace({systemId, waypointId}) {
   )
 }
 
-function Shipyard(systemId, waypointId) {
+function Shipyard({systemId, waypointId}) {
   const [shipyard, setShipyard] = useState({});
 
   useEffect(() => {
@@ -132,8 +132,10 @@ function Shipyard(systemId, waypointId) {
     });
   }
 
-  <div className='w-full mx-2'>
-    <hr className='my-2'/>
-    <h1 className='text-center text-xl'>Shipyard</h1>
-  </div>
+  return (
+    <div className='w-full mx-2'>
+      <hr className='my-2'/>
+      <h1 className='text-center text-xl'>Shipyard</h1>
+    </div>
+  )
 }

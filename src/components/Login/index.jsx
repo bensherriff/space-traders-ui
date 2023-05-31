@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import PropTypes from 'prop-types';
 import { SessionStorage } from "../../js";
+import { useNavigate } from "react-router-dom";
 
 export default function Login( { setAgent } ) {
   const [token, setToken] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     var token = SessionStorage.getSessionToken();
@@ -22,6 +24,7 @@ export default function Login( { setAgent } ) {
       SessionStorage.setSessionToken(token);
       SessionStorage.setSessionAgent(response.data);
       setAgent(response.data);
+      navigate("/fleet");
     } else if (response.error) {
       setErrorMessage(response.error.message);
     }

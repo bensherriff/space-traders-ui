@@ -15,6 +15,16 @@ pub struct Reactor {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShipyardReactor {
+  pub symbol: String,
+  pub name: String,
+  pub description: String,
+  #[serde(rename = "powerOutput")]
+  pub power_output: u64,
+  pub requirements: Requirements
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ReactorType {
   #[serde(rename = "REACTOR_SOLAR_I")]
   SolarI,

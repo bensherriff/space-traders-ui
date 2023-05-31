@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use serde::{Serialize, Deserialize};
 
-use self::{registration::Registration, navigation::Navigation, crew::Crew, frame::Frame, reactor::Reactor, engine::Engine, module::Module, mount::Mount, cargo::Cargo, fuel::Fuel, cooldown::Cooldown};
+use self::{registration::Registration, navigation::Navigation, crew::Crew, frame::{Frame, ShipyardFrame}, reactor::{Reactor, ShipyardReactor}, engine::{Engine, ShipyardEngine}, module::Module, mount::Mount, cargo::Cargo, fuel::Fuel, cooldown::Cooldown};
 
 use super::SymbolResponse;
 
@@ -116,9 +116,11 @@ pub struct ShipyardShip {
   pub ship_type: ShipType,
   pub name: String,
   pub description: String,
-  pub frame: Frame,
-  pub reactor: Reactor,
-  pub engine: Engine,
+  #[serde(rename = "purchasePrice")]
+  pub purchase_price: u64,
+  pub frame: ShipyardFrame,
+  pub reactor: ShipyardReactor,
+  pub engine: ShipyardEngine,
   pub modules: Vec<Module>,
   pub mounts: Vec<Mount>
 }

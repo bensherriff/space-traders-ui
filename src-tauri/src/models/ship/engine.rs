@@ -14,6 +14,15 @@ pub struct Engine {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShipyardEngine {
+  pub symbol: EngineType,
+  pub name: String,
+  pub description: String,
+  pub speed: u64,
+  pub requirements: Requirements
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EngineType {
   #[serde(rename = "ENGINE_IMPULSE_DRIVE_I")]
   ImpulseDriveI,

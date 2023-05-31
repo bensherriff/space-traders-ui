@@ -2,7 +2,7 @@ import {useParams} from 'react-router-dom';
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from 'react';
 import { SessionStorage, Text } from '../js';
-import Tag from '../components/Tag';
+import { SystemMap } from '../components/Canvas';
 import { NavLink } from "react-router-dom";
 
 export default function System() {
@@ -30,7 +30,8 @@ export default function System() {
             <li>Coordinates: ({system.x},{system.y})</li>
           </ul>
           {system.waypoints && Array.isArray(system.waypoints)? (
-            <div>
+            <div className=''>
+              <SystemMap system={system}/>
               <hr className='my-2'/>
               <h2 className='text-xl'>Waypoints</h2>
               <ul>

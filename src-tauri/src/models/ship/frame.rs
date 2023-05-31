@@ -8,7 +8,21 @@ pub struct Frame {
   pub symbol: FrameType,
   pub name: String,
   pub description: String,
-  pub condition: Option<f64>,
+  pub condition: f64,
+  #[serde(rename = "moduleSlots")]
+  pub module_slots: u64,
+  #[serde(rename = "mountingPoints")]
+  pub mounting_points: u64,
+  #[serde(rename = "fuelCapacity")]
+  pub fuel_capacity: u64,
+  pub requirements: Requirements
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShipyardFrame {
+  pub symbol: FrameType,
+  pub name: String,
+  pub description: String,
   #[serde(rename = "moduleSlots")]
   pub module_slots: u64,
   #[serde(rename = "mountingPoints")]
