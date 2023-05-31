@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SessionStorage } from "../../js";
+import { SessionStorage, Text } from "../../js";
 import { NavLink } from "react-router-dom";
 
 export default function Header() {
@@ -16,7 +16,7 @@ export default function Header() {
     <header className="border-b mb-2 bg-blue-900">
       <ul className="flex justify-between px-4">
         <HeaderItem text={agent.symbol} to={"/fleet"} />
-        <HeaderItem text={`${agent.credits} ${'\u2124'}`}/>
+        <HeaderItem text={Text.currency(agent.credits)}/>
         <HeaderItem text={agent.headquarters} to={`/system/${system}/${agent.headquarters}`} />
         <HeaderItem text={agent.startingFaction} to={`/faction/${agent.startingFaction}`} />
       </ul>

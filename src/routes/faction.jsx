@@ -22,7 +22,7 @@ export default function Faction() {
     <div>
       <h1 className='text-center pb-2 text-2xl'>{faction.name} ({faction.symbol})</h1>
       <hr className='mb-5'/>
-      <div className='mb-5 text-center'>
+      <div className='w-full mb-5 text-center'>
         {faction && faction.traits && Array.isArray(faction.traits)? (
           faction.traits.map((trait, index) => (
             <Tag key={index} text={trait.name}/>

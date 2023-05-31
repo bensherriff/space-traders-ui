@@ -1,7 +1,7 @@
 use std::fmt::{Formatter, Display};
 use serde::{Deserialize, Serialize};
 
-use super::{SymbolResponse, waypoint::Waypoint, ship::cooldown::Cooldown};
+use super::{SymbolResponse, waypoint::WaypointType, ship::cooldown::Cooldown};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct System {
@@ -12,8 +12,17 @@ pub struct System {
   pub system_type: SystemType,
   pub x: i64,
   pub y: i64,
-  pub waypoints: Vec<Waypoint>,
+  pub waypoints: Vec<SystemWaypoint>,
   pub factions: Vec<SymbolResponse>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SystemWaypoint {
+  pub symbol: String,
+  #[serde(rename = "type")]
+  pub system_type: WaypointType,
+  x: i64,
+  y: i64
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
