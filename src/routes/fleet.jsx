@@ -11,7 +11,7 @@ export default function Fleet() {
   }, []);
 
   async function list_ships() {
-    invoke("list_ships", { token: Storage.getSessionToken() }).then((response) => {
+    invoke("list_ships", { token: Storage.getToken() }).then((response) => {
       setShips(response.data);
       response.data.forEach(ship => {
         Storage.setShip(ship.symbol, ship);

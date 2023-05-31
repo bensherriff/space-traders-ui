@@ -15,7 +15,7 @@ export default function Ship() {
   }, []);
 
   async function get_ship() {
-    invoke("get_ship", { token: Storage.getSessionToken(), symbol: shipId}).then((response) => {
+    invoke("get_ship", { token: Storage.getToken(), symbol: shipId}).then((response) => {
 
     });
   }

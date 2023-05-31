@@ -15,7 +15,7 @@ export default function Waypoint() {
   }, [systemId, waypointId]);
 
   async function get_waypoint() {
-    invoke("get_waypoint", { token: Storage.getSessionToken(), system: systemId, waypoint: waypointId}).then((response) => {
+    invoke("get_waypoint", { token: Storage.getToken(), system: systemId, waypoint: waypointId}).then((response) => {
       setWaypoint(response.data);
       setWaypointTraits(response.data.traits);
     })
@@ -81,7 +81,7 @@ function Marketplace({systemId, waypointId}) {
   }, [systemId, waypointId]);
 
   async function get_market() {
-    invoke("get_market", { token: Storage.getSessionToken(), system: systemId, waypoint: waypointId}).then((response) => {
+    invoke("get_market", { token: Storage.getToken(), system: systemId, waypoint: waypointId}).then((response) => {
       setMarket(response.data);
 
       let t = response.data.transactions;
@@ -211,7 +211,7 @@ function Shipyard({systemId, waypointId}) {
   }, [systemId, waypointId]);
 
   async function get_shipyard() {
-    invoke("get_shipyard", { token: Storage.getSessionToken(), system: systemId, waypoint: waypointId}).then((response) => {
+    invoke("get_shipyard", { token: Storage.getToken(), system: systemId, waypoint: waypointId}).then((response) => {
       setShipyard(response.data);
     });
   }

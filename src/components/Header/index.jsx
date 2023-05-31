@@ -3,10 +3,10 @@ import { Storage, Text } from "../../js";
 import { NavLink } from "react-router-dom";
 
 export default function Header() {
-  const [agent, setAgent] = useState(Storage.getSessionAgent());
+  const [agent, setAgent] = useState(Storage.getAgent());
 
   useEffect(() => {
-    setAgent(Storage.getSessionAgent());
+    setAgent(Storage.getAgent());
   }, [])
 
   let split = agent.headquarters.split("-");

@@ -1,25 +1,25 @@
-export function getSessionAgent() {
-  const agent = sessionStorage.getItem("agent");
+export function getAgent() {
+  const agent = getSessionStorage("agent");
   if (!agent) {
     return {}
   }
   return JSON.parse(agent);
 }
 
-export function setSessionAgent(agent) {
-  sessionStorage.setItem("agent", JSON.stringify(agent));
+export function setAgent(agent) {
+  setSessionStorage("agent", JSON.stringify(agent));
 }
 
-export function getSessionToken() {
-  const token = sessionStorage.getItem("token");
+export function getToken() {
+  const token = getLocalStorage("token");
   if (!token) {
     return ""
   }
   return token;
 }
 
-export function setSessionToken(token) {
-  sessionStorage.setItem("token", token);
+export function setToken(token) {
+  setLocalStorage("token", token);
 }
 
 export function getShip(key) {
@@ -42,4 +42,12 @@ export function getLocalStorage(key) {
 
 export function setLocalStorage(key, value) {
   localStorage.setItem(key, value);
+}
+
+export function getSessionStorage(key) {
+  return sessionStorage.getItem(key);
+}
+
+export function setSessionStorage(key, value) {
+  sessionStorage.setItem(key, value);
 }

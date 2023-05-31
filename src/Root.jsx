@@ -9,7 +9,7 @@ export default function Root() {
   const [agent, setAgent] = useState({});
 
   useEffect(() => {
-    var _agent = Storage.getSessionAgent();
+    var _agent = Storage.getAgent();
     setAgent(_agent);
   }, [])
 

@@ -1,7 +1,7 @@
 import {useParams} from 'react-router-dom';
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from 'react';
-import { getSessionToken } from '../js/storage';
+import { getToken } from '../js/storage';
 import Tag from '../components/Tag';
 
 export default function Faction() {
@@ -13,7 +13,7 @@ export default function Faction() {
   }, []);
   
   async function get_faction() {
-    invoke("get_faction", { token: getSessionToken(), factionSymbol: factionId }).then((response) => {
+    invoke("get_faction", { token: getToken(), factionSymbol: factionId }).then((response) => {
       setFaction(response.data);
     });
   }

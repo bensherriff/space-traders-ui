@@ -11,11 +11,12 @@ export default function Login( { setAgent } ) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    get_status();
-    var token = Storage.getSessionToken();
+    var token = Storage.getToken();
+    console.log(token);
     if (token) {
       setToken(token);
     }
+    get_status();
   }, [])
 
   async function get_my_agent() {
@@ -23,8 +24,8 @@ export default function Login( { setAgent } ) {
     if (response.data) {
       setErrorMessage("");
       setToken(token);
-      Storage.setSessionToken(token);
-      Storage.setSessionAgent(response.data);
+      Storage.setToken(token);
+      Storage.setAgent(response.data);
       setAgent(response.data);
       navigate("/fleet");
     } else if (response.error) {
@@ -41,7 +42,7 @@ export default function Login( { setAgent } ) {
   return (
     <div className="m-0 pt-10 flex flex-col">
       <div className="justify-center text-center">
-        <h1 className="text-5xl mb-4 select-none">Space Traders</h1>
+        <h1 className="text-5xl mb-4 select-none text-sky-600 font-bold">Space Traders</h1>
 
         <div className="flex justify-center">
           <LoginLogo link={"https://spacetraders.io"} src={"/space-traders.svg"} alt={"Space Traders logo"}/>
@@ -56,8 +57,9 @@ export default function Login( { setAgent } ) {
           }}
         >
           <textarea
-            className="w-10/12 h-60"
+            className="w-10/12 h-60 text-transparent [text-shadow:_0_0_8px_rgb(256_256_256_/_90%)]"
             id="token-input"
+            value={token}
             onChange={(e) => setToken(e.currentTarget.value)}
             placeholder="Enter your token..."
           />

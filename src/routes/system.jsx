@@ -14,7 +14,7 @@ export default function System() {
   }, [systemId]);
 
   async function get_system() {
-    invoke("get_system", { token: Storage.getSessionToken(), system: systemId }).then((response) => {
+    invoke("get_system", { token: Storage.getToken(), system: systemId }).then((response) => {
       setSystem(response.data);
     })
   }
