@@ -2,8 +2,6 @@ use reqwest::Client;
 use serde::{de, Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::configuration::Configuration;
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ResponseObject<T> {
   pub data: Option<T>,
@@ -33,32 +31,32 @@ pub enum ResponseObjectEvent<T> {
   None
 }
 
-pub async fn get_request<T: de::DeserializeOwned>(configuration: &Configuration, url: &str, query: Option<Vec<(&str, &String)>>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
-  let local_config: &Configuration = configuration;
-  let token: &String = &local_config.token;
-  let client: &Client = &local_config.client;
+pub async fn get_request<T: de::DeserializeOwned>(token: String, url: String, query: Option<Vec<(&str, &String)>>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
   let response: Value;
+  let base_url: String = "https://api.spacetraders.io/v2".to_string();
+  let client: Client = Client::new();
+  let uri: String = format!("{}{}", base_url, url);
 
   match query {
     Some(q) => {
-      let mut local_url = format!("{}?", url);
+      let mut _uri = format!("{}?", uri);
       for (index, item) in q.iter().enumerate() {
         if index < q.len() - 1 {
-          local_url = format!("{}{}={}&", local_url, item.0, item.1)
+          _uri = format!("{}{}={}&", _uri, item.0, item.1)
         } else {
-          local_url = format!("{}{}={}", local_url, item.0, item.1)
+          _uri = format!("{}{}={}", _uri, item.0, item.1)
         }
       }
-      response = client.get(local_url)
-        .bearer_auth(&token)
+      response = client.get(_uri)
+        .bearer_auth(token)
         .send()
         .await?
         .json::<Value>()
         .await?;
     },
     None => {
-      response = client.get(url)
-        .bearer_auth(&token)
+      response = client.get(uri)
+        .bearer_auth(token)
         .send()
         .await?
         .json::<Value>()
@@ -68,16 +66,16 @@ pub async fn get_request<T: de::DeserializeOwned>(configuration: &Configuration,
   handle_response(&response)
 }
 
-pub async fn post_request<T: de::DeserializeOwned>(configuration: &Configuration, url: &str, body: Option<String>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
-  let local_config: &Configuration = configuration;
-  let token: &String = &local_config.token;
-  let client: Client = Client::new();
+pub async fn post_request<T: de::DeserializeOwned>(token: String, url: String, body: Option<String>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
   let response: Value;
+  let base_url: String = "https://api.spacetraders.io/v2".to_string();
+  let client: Client = Client::new();
+  let uri: String = format!("{}{}", base_url, url);
 
   match body {
     None => {
-      response = client.post(url)
-        .bearer_auth(&token)
+      response = client.post(uri)
+        .bearer_auth(token)
         .header("Content-Length", "0")
         .send()
         .await?
@@ -85,8 +83,8 @@ pub async fn post_request<T: de::DeserializeOwned>(configuration: &Configuration
         .await?;
     }
     Some(b) => {
-      response = client.post(url)
-        .bearer_auth(&token)
+      response = client.post(uri)
+        .bearer_auth(token)
         .body(b)
         .send()
         .await?
@@ -97,16 +95,16 @@ pub async fn post_request<T: de::DeserializeOwned>(configuration: &Configuration
   handle_response(&response)
 }
 
-pub async fn patch_request<T: de::DeserializeOwned>(configuration: &Configuration, url: &str, body: Option<String>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
-  let local_config: &Configuration = configuration;
-  let token: &String = &local_config.token;
-  let client: Client = Client::new();
+pub async fn patch_request<T: de::DeserializeOwned>(token: String, url: String, body: Option<String>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
   let response: Value;
+  let base_url: String = "https://api.spacetraders.io/v2".to_string();
+  let client: Client = Client::new();
+  let uri: String = format!("{}{}", base_url, url);
 
   match body {
     None => {
-      response = client.patch(url)
-        .bearer_auth(&token)
+      response = client.patch(uri)
+        .bearer_auth(token)
         .header("Content-Length", "0")
         .send()
         .await?
@@ -114,8 +112,8 @@ pub async fn patch_request<T: de::DeserializeOwned>(configuration: &Configuratio
         .await?;
     }
     Some(b) => {
-      response = client.patch(url)
-        .bearer_auth(&token)
+      response = client.patch(uri)
+        .bearer_auth(token)
         .body(b)
         .send()
         .await?
@@ -127,7 +125,7 @@ pub async fn patch_request<T: de::DeserializeOwned>(configuration: &Configuratio
 }
 
 fn handle_response<T: de::DeserializeOwned>(response: &Value) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
-  let _response = response.clone();
+  let _response: Value = response.clone();
   let result: Result<ResponseObjectEvent<T>, _> = serde_json::from_value::<ResponseObjectEvent<T>>(_response);
   match result {
     Ok(deserialized) => {

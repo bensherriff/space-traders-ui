@@ -1,4 +1,4 @@
-use crate::{models::{status::Status, agent::{NewAgent, NewAgentResponse}}, configuration};
+use crate::models::{status::Status, agent::{NewAgent, NewAgentResponse}};
 
 use self::requests::{ResponseObject, get_request, post_request, handle_result};
 
@@ -9,19 +9,17 @@ pub mod fleet;
 pub mod requests;
 pub mod systems;
 
-pub async fn get_status(configuration: &configuration::Configuration) -> ResponseObject<Status> {
-  let local_configuration = configuration;
-  let url = format!("{}/", local_configuration.base_url);
-  handle_result(get_request::<Status>(configuration, &url, None).await)
+#[tauri::command]
+pub async fn get_status(token: String) -> ResponseObject<Status> {
+  handle_result(get_request::<Status>(token, "/".to_string(), None).await)
 }
 
-pub async fn register(configuration: &configuration::Configuration, faction: &String, symbol: &String, email: &String) -> ResponseObject<NewAgentResponse> {
-  let local_configuration = configuration;
-  let url = format!("{}/register", local_configuration.base_url);
+#[tauri::command]
+pub async fn register(token: String, faction: String, symbol: String, email: String) -> ResponseObject<NewAgentResponse> {
   let new_agent = NewAgent {
     faction: faction.to_string(),
     symbol: symbol.to_string(),
     email: email.to_string()
   };
-  handle_result(post_request::<NewAgentResponse>(configuration, &url, Some(serde_json::to_string(&new_agent).unwrap())).await)
+  handle_result(post_request::<NewAgentResponse>(token, "/register".to_string(), Some(serde_json::to_string(&new_agent).unwrap())).await)
 }
