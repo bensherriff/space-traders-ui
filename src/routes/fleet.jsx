@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from 'react';
 import { Storage } from '../js';
 import { ShipInfo } from "../components/Ship";
+import { Button } from "../components";
 
 export default function Fleet() {
   const [ships, setShips] = useState({});
@@ -26,7 +27,7 @@ export default function Fleet() {
           <ShipInfo key={index} ship={ship}/>
         ))
       ): <></>}
-      <button className="float-right" onClick={list_ships}>Refresh</button>
+      <Button className="float-right" onClick={list_ships}>Refresh</Button>
     </div>
   )
 }

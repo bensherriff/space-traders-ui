@@ -6,7 +6,9 @@ export default function Header() {
   const [agent, setAgent] = useState(Storage.getAgent());
 
   useEffect(() => {
-    setAgent(Storage.getAgent());
+    setInterval(() => {
+      setAgent(Storage.getAgent());
+    }, 60000);
   }, [])
 
   let split = agent.headquarters.split("-");

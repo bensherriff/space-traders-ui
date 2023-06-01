@@ -67,6 +67,9 @@ export default function Waypoint() {
               </div>
             </div> 
           ): <></>}
+          {waypoint.type == 'JUMP_GATE'? (
+            <JumpGate systemId={systemId} waypointId={waypointId}/>
+          ): <></>}
           <div className='w-full flex'>
           {waypointTraits.some(trait => trait.symbol === 'MARKETPLACE')? (
             <Marketplace systemId={systemId} waypointId={waypointId}/>
@@ -75,6 +78,45 @@ export default function Waypoint() {
             <Shipyard systemId={systemId} waypointId={waypointId}/>
           ): <></>}
           </div>
+        </div>
+      ): <></>}
+    </div>
+  )
+}
+
+function JumpGate({systemId, waypointId}) {
+  const [jumpGate, setJumpGate] = useState({});
+
+  useEffect(() => {
+    get_jump_gate();
+  }, []);
+
+  async function get_jump_gate() {
+    await invoke("get_jump_gate", { token: Storage.getToken(), system: systemId, waypoint: waypointId }).then(response => {
+      if (response && response.data) {
+        setJumpGate(response.data);
+      }
+    });
+  }
+
+  return (
+    <div className='block p-4 shadow-md rounded-lg border bg-stone-800 border-stone-900'>
+      <h1 className='text-center text-2xl'>Destinations</h1>
+      <hr className='my-2'/>
+      {jumpGate && jumpGate.connectedSystems? (
+        <div>
+          Range: {jumpGate.jumpRange}
+          {jumpGate.factionSymbol}
+          <ul className='block w-64'>
+          {jumpGate.connectedSystems.map((system, index) => (
+            <NavLink key={index} to={`/system/${system.symbol}`}>
+              <li className='block p-2 mb-2 bg-[#4b5563] hover:bg-[#2b3e58] shadow-md rounded-md select-none'>
+                <span className='mr-4'>{Text.capitalize(system.type)}</span>
+                <span className='float-right'>{system.symbol}</span>
+              </li>
+            </NavLink>
+          ))}
+          </ul>
         </div>
       ): <></>}
     </div>

@@ -21,6 +21,8 @@ export default function System() {
         if (response && response.data) {
           setSystem(response.data);
           Storage.setSystem(systemId, response.data);
+        } else if (response && response.error) {
+          console.log(response.error);
         }
       });
     }

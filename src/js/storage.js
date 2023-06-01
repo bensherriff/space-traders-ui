@@ -214,18 +214,18 @@ export function setWaypoint(key, waypoint) {
   }
 }
 
-function getLocalStorage(key) {
+export function getLocalStorage(key) {
   return localStorage.getItem(key);
 }
 
-function setLocalStorage(key, value) {
+export function setLocalStorage(key, value) {
   localStorage.setItem(key, value);
 }
 
-function getSessionStorage(key) {
+export function getSessionStorage(key) {
   return sessionStorage.getItem(key);
 }
 
-function setSessionStorage(key, value) {
+export function setSessionStorage(key, value) {
   sessionStorage.setItem(key, value);
 }

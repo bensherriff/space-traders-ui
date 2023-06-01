@@ -31,7 +31,7 @@ pub enum ResponseObjectEvent<T> {
   None
 }
 
-pub async fn get_request<T: de::DeserializeOwned>(token: String, url: String, query: Option<Vec<(&str, &String)>>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
+pub async fn get_request<T: de::DeserializeOwned>(token: String, url: String, query: Option<Vec<(&str, String)>>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
   let response: Value;
   let base_url: String = "https://api.spacetraders.io/v2".to_string();
   let client: Client = Client::new();

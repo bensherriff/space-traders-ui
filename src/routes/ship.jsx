@@ -81,7 +81,7 @@ export default function Ship() {
             <div className='flex justify-between'>
               <ProgressBarWithLabel label="Condition" text={`${ship.frame.condition}/100`} percentage={ship.frame.condition} />
               <ProgressBarWithLabel label={<>Fuel
-                {ship.fuel.current < ship.fuel.capacity? (
+                {ship.fuel.current < ship.fuel.capacity && ship.nav.status !== 'IN_TRANSIT'? (
                   <Button className='ml-1 text-sm' onClick={refuel_ship}>Refuel</Button>
                 ): <></>}
                 <ErrorText>{refuelError}</ErrorText>

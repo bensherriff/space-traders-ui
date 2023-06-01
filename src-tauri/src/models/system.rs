@@ -86,8 +86,11 @@ pub struct ScannedSystem {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JumpGate {
+  #[serde(rename = "jumpRange")]
   pub jump_range: u64,
+  #[serde(rename = "factionSymbol")]
   pub faction_symbol: String,
+  #[serde(rename = "connectedSystems")]
   pub connected_systems: Vec<ConnectedSystem>
 }
 

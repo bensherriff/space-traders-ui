@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { Storage, Text } from '../../js';
 import { ProgressBarWithLabel, ProgressBar } from '../ProgressBar';
-import { Button } from '..';
+import { Button, CountdownTimer } from '..';
 
 export function ShipInfo({ship}) {
   return (
@@ -24,11 +24,12 @@ export function ShipInfo({ship}) {
 
 export function NavStatusLink({ship}) {
   if (ship.nav.status === "IN_TRANSIT") {
+    const timeout = (new Date(ship.nav.route.arrival).getTime()/1000 - Date.now()/1000);
     return (
       <span>
         In transit to <NavLink to={`/system/${ship.nav.systemSymbol}/${ship.nav.waypointSymbol}`}>
           {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.destination.type)}) </NavLink>
-        (Arrival: {Text.date(ship.nav.route.arrival)})
+        <span className='text-sky-500'><CountdownTimer duration={timeout}/></span>
       </span>
     )
   } else if (ship.nav.status === "IN_ORBIT") {
@@ -50,8 +51,9 @@ export function NavStatusLink({ship}) {
 
 export function NavStatus({ship}) {
   if (ship.nav.status === "IN_TRANSIT") {
+    const timeout = (new Date(ship.nav.route.arrival).getTime()/1000 - Date.now()/1000);
     return (
-      <span>In transit to {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.destination.type)}) (Arrival: {Text.date(ship.nav.route.arrival)})</span>
+      <span>In transit to {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.destination.type)}) <span className='text-sky-500'><CountdownTimer duration={timeout}/></span></span>
     )
   } else if (ship.nav.status === "IN_ORBIT") {
     return (
@@ -210,9 +212,16 @@ export function Navigation({ship, updateShip}) {
           },
           nav: response.data.nav
         });
-        const timeout = (new Date(ship.nav.route.arrival).getTime() - new Date(ship.nav.route.departureTime));
-        setTimeout(() => {
-          navigate(0);
+        const timeout = (new Date(ship.nav.route.arrival).getTime() - Math.min(new Date(ship.nav.route.departureTime).getTime(), Date.now()));
+        setTimeout(async () => {
+          await invoke("get_ship_nav", { token: Storage.getToken(), symbol: ship.symbol }).then(response => {
+            if (response && response.data) {
+              updateShip({
+                ...ship,
+                nav: response.data
+              })
+            }
+          });
         }, timeout);
       }
     });

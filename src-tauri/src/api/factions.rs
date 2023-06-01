@@ -10,11 +10,11 @@ pub async fn get_faction(token: String, faction_symbol: String) -> ResponseObjec
 
 #[tauri::command]
 pub async fn get_factions(token: String, limit: u64, page: u64) -> ResponseObject<Vec<Faction>> {
-  let local_limit = &limit.to_string();
-  let local_page = &page.to_string();
+  let _limit = limit.to_string();
+  let _page = page.to_string();
   let query = vec![
-    ("limit", local_limit),
-    ("page", local_page),
+    ("limit", _limit),
+    ("page", _page),
   ];
   handle_result(get_request::<Vec<Faction>>(token, "/factions".to_string(), Some(query)).await)
 }

@@ -4,8 +4,14 @@ use super::requests::{ResponseObject, get_request, handle_result};
 
 /// Return a list of all systems.
 #[tauri::command]
-pub async fn list_systems(token: String) -> ResponseObject<Vec<System>> {
-  handle_result(get_request::<Vec<System>>(token, "/systems".to_string(), None).await)
+pub async fn list_systems(token: String, limit: u64, page: u64) -> ResponseObject<Vec<System>> {
+  let _limit = limit.to_string();
+  let _page = page.to_string();
+  let query = vec![
+    ("limit", _limit),
+    ("page", _page)
+  ];
+  handle_result(get_request::<Vec<System>>(token, "/systems".to_string(), Some(query)).await)
 }
 
 /// Get the details of a system.

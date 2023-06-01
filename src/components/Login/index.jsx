@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import PropTypes from 'prop-types';
-import { Storage } from "../../js";
+import { Storage, Text } from "../../js";
 import { useNavigate } from "react-router-dom";
+import { Button } from "..";
 
 export default function Login( { setAgent } ) {
   const [token, setToken] = useState("");
@@ -17,6 +18,18 @@ export default function Login( { setAgent } ) {
     }
     get_status();
   }, [])
+
+  async function connect() {
+    Storage.setSessionStorage('systems_db_loaded', false);
+    get_my_agent();
+  }
+
+  async function load_database_data() {
+    await invoke("database_init", { token: token }).then(response => {
+      console.log(`Systems database loaded: ${response}`);
+      Storage.setSessionStorage('systems_db_loaded', true);
+    });
+  }
 
   async function get_my_agent() {
     await invoke("get_my_agent", { token: token }).then(response => {
@@ -53,7 +66,7 @@ export default function Login( { setAgent } ) {
           className="mt-10 row flex flex-col justify-center items-center"
           onSubmit={(e) => {
             e.preventDefault();
-            get_my_agent();
+            connect();
           }}
         >
           <textarea
@@ -63,7 +76,7 @@ export default function Login( { setAgent } ) {
             onChange={(e) => setToken(e.currentTarget.value)}
             placeholder="Enter your token..."
           />
-          <button className="w-11/12 mt-10 bg-gray-600" type="submit">Connect</button>
+          <button className="button w-11/12 mt-10 bg-gray-600" type="submit">Connect</button>
         </form>
 
         <p>{errorMessage}</p>
@@ -72,7 +85,8 @@ export default function Login( { setAgent } ) {
         <div className="mt-4 mx-4 break-words">
           <i className="text-center flex">{status.description}</i>
           <ul>
-            <li>Next Reset: {status.resetDate}</li>
+            <li>Next Reset: {Text.date(status.serverResets.next)}</li>
+            <li><Button className="w-44" onClick={load_database_data}>Load Database Data (Warning: Slow)</Button></li>
           </ul>
           <div className="mt-4 flex justify-between">
             <div className="mx-4 w-1/4">
