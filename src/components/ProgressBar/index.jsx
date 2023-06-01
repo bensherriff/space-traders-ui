@@ -9,7 +9,7 @@ export function ProgressBarWithLabel({ label, text, percentage }) {
 
 export function ProgressBar({ text, percentage }) {
   return (
-    <div className="w-full h-6 mb-4 bg-gray-400 rounded-full flex">
+    <div className="w-64 h-6 mb-4 bg-gray-400 rounded-full flex">
       <div className="h-6 bg-blue-600 rounded-full" style={{width: percentage + '%'}}/>
       <div className="pl-2 text-white absolute">{text}</div>
     </div>

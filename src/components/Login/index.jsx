@@ -12,7 +12,6 @@ export default function Login( { setAgent } ) {
 
   useEffect(() => {
     var token = Storage.getToken();
-    console.log(token);
     if (token) {
       setToken(token);
     }
@@ -20,17 +19,18 @@ export default function Login( { setAgent } ) {
   }, [])
 
   async function get_my_agent() {
-    let response = await invoke("get_my_agent", { token: token });
-    if (response.data) {
-      setErrorMessage("");
-      setToken(token);
-      Storage.setToken(token);
-      Storage.setAgent(response.data);
-      setAgent(response.data);
-      navigate("/fleet");
-    } else if (response.error) {
-      setErrorMessage(response.error.message);
-    }
+    await invoke("get_my_agent", { token: token }).then(response => {
+      if (response.data) {
+        setErrorMessage("");
+        setToken(token);
+        Storage.setToken(token);
+        Storage.setAgent(response.data);
+        setAgent(response.data);
+        navigate("/fleet");
+      } else if (response.error) {
+        setErrorMessage(response.error.message);
+      }
+    });
   }
 
   async function get_status() {
@@ -57,7 +57,7 @@ export default function Login( { setAgent } ) {
           }}
         >
           <textarea
-            className="w-10/12 h-60 text-transparent [text-shadow:_0_0_8px_rgb(256_256_256_/_90%)]"
+            className="w-10/12 h-60"
             id="token-input"
             value={token}
             onChange={(e) => setToken(e.currentTarget.value)}
@@ -72,7 +72,7 @@ export default function Login( { setAgent } ) {
         <div className="mt-4 mx-4 break-words">
           <i className="text-center flex">{status.description}</i>
           <ul>
-            <li>Reset Date: {status.resetDate}</li>
+            <li>Next Reset: {status.resetDate}</li>
           </ul>
           <div className="mt-4 flex justify-between">
             <div className="mx-4 w-1/4">

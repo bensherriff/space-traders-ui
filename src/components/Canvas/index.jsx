@@ -92,7 +92,7 @@ export function SystemMap({system}) {
 
         // context.translate(width/2, height/2);
         context.scale(cameraZoom, cameraZoom);
-        context.translate(-width/2 + cameraOffset.x, -height/2 + cameraOffset.y)
+        context.translate(-width/2 + cameraOffset.x, -height/2 + cameraOffset.y);
         context.clearRect(0, 0, width, height);
 
         solarObjects.forEach(object => {
