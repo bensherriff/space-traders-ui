@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from 'react';
 import { getToken } from '../js/storage';
 import Tag from '../components/Tag';
+import { Storage } from '../js';
 
 export default function Faction() {
   const {factionId} = useParams();
@@ -13,9 +14,16 @@ export default function Faction() {
   }, []);
   
   async function get_faction() {
-    invoke("get_faction", { token: getToken(), factionSymbol: factionId }).then((response) => {
-      setFaction(response.data);
-    });
+    if (Storage.hasFaction(factionId)) {
+      setFaction(Storage.getFaction(factionId));
+    } else {
+      invoke("get_faction", { token: getToken(), factionSymbol: factionId }).then((response) => {
+        if (response && response.data) {
+          setFaction(response.data);
+          Storage.setFaction(factionId, response.data);
+        }
+      });
+    }
   }
 
   return (

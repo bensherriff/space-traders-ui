@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { Storage, Text } from '../../js';
 import { ProgressBarWithLabel, ProgressBar } from '../ProgressBar';
+import { Button } from '..';
 
 export function ShipInfo({ship}) {
   return (
@@ -192,7 +193,6 @@ export function Navigation({ship, updateShip}) {
     invoke("get_system", { token: Storage.getToken(), system: ship.nav.systemSymbol}).then(response => {
       if (response && response.data) {
         setSystem(response.data);
-        console.log(response);
       }
     });
   }
@@ -210,8 +210,7 @@ export function Navigation({ship, updateShip}) {
           },
           nav: response.data.nav
         });
-        const timeout = (new Date(ship.nav.route.arrival).getTime() - Date.now()) * 1000;
-        console.log('timeout', timeout);
+        const timeout = (new Date(ship.nav.route.arrival).getTime() - new Date(ship.nav.route.departureTime));
         setTimeout(() => {
           navigate(0);
         }, timeout);
@@ -228,9 +227,9 @@ export function Navigation({ship, updateShip}) {
       <h1 className='text-lg mr-4'>Navigation</h1>
       <NavStatusLink ship={ship}/>
       {ship.nav.status === "IN_ORBIT"? (
-        <button onClick={dock_ship}>Dock</button>
+        <Button className='ml-1' onClick={dock_ship}>Dock</Button>
       ): ship.nav.status === "DOCKED"? (
-        <button onClick={orbit_ship}>Orbit</button>
+        <Button className='ml-1' onClick={orbit_ship}>Orbit</Button>
       ): <></>}
       {system && system.waypoints && ship.nav.status !== "IN_TRANSIT"? (
         <form method='post' onSubmit={navigate_ship}>
@@ -245,7 +244,7 @@ export function Navigation({ship, updateShip}) {
               </>
             ))}
           </select>
-          <button type='submit'>Navigate</button>
+          <Button className='ml-1' type='submit'>Navigate</Button>
         </form>
       ): <></>}
     </div>

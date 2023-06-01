@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {useParams} from 'react-router-dom';
 import { invoke } from "@tauri-apps/api/tauri";
 import { Storage, Text } from '../js';
-import { Error } from '../components';
+import { Button, Error, ErrorText } from '../components';
 import { ProgressBarWithLabel } from '../components/ProgressBar';
 import { CargoInfo, ModulesInfo, MountsInfo, NavStatusLink, Navigation } from '../components/Ship';
 
@@ -10,6 +10,7 @@ export default function Ship() {
   const {shipId} = useParams();
   const [ship, setShip] = useState({});
   const [error, setError] = useState({});
+  const [refuelError, setRefuelError] = useState(null);
   const [waypoint, setWaypoint] = useState(null);
   const [market, setMarket] = useState(null);
   const [shipyard, setShipyard] = useState(null);
@@ -20,17 +21,22 @@ export default function Ship() {
 
   function update_ship(ship) {
     setShip(ship);
+    Storage.setShip(ship.symbol, ship);
   }
 
   async function get_ship() {
-    invoke("get_ship", { token: Storage.getToken(), symbol: shipId}).then(response => {
-      if (response && response.data) {
-        setShip(response.data);
-        setError("");
-      } else if (response && response.error) {
-        setError(response.error);
-      }
-    });
+    if (Storage.hasShip(shipId)) {
+      setShip(Storage.getShip(shipId));
+    } else {
+      invoke("get_ship", { token: Storage.getToken(), symbol: shipId}).then(response => {
+        if (response && response.data) {
+          update_ship(response.data);
+          setError("");
+        } else if (response && response.error) {
+          setError(response.error);
+        }
+      });
+    }
   }
 
   async function get_waypoint() {
@@ -45,6 +51,24 @@ export default function Ship() {
 
   }
 
+  async function refuel_ship() {
+    invoke('refuel_ship', { token: Storage.getToken(), symbol: ship.symbol }).then(response => {
+      if (response && response.data) {
+        Storage.setAgent(response.data.agent);
+        update_ship({
+          ...ship,
+          fuel: {
+            ...ship.fuel,
+            current: response.data.fuel.current
+          }
+        });
+        setRefuelError("");
+      } else if (response && response.error) {
+        setRefuelError(response.error.message);
+      }
+    }); 
+  }
+
   return (
     <>
       <Error error={error}/>
@@ -56,7 +80,12 @@ export default function Ship() {
             </span>
             <div className='flex justify-between'>
               <ProgressBarWithLabel label="Condition" text={`${ship.frame.condition}/100`} percentage={ship.frame.condition} />
-              <ProgressBarWithLabel label="Fuel" text={`${ship.fuel.current}/${ship.fuel.capacity}`} percentage={ship.fuel.current/ship.fuel.capacity*100} />
+              <ProgressBarWithLabel label={<>Fuel
+                {ship.fuel.current < ship.fuel.capacity? (
+                  <Button className='ml-1 text-sm' onClick={refuel_ship}>Refuel</Button>
+                ): <></>}
+                <ErrorText>{refuelError}</ErrorText>
+              </>} text={`${ship.fuel.current}/${ship.fuel.capacity}`} percentage={ship.fuel.current/ship.fuel.capacity*100} />
               <ProgressBarWithLabel
                 label={`Crew (${Text.capitalize(ship.crew.rotation)})`}
                 text={`${ship.crew.current}/${ship.crew.capacity} (${ship.crew.required} required)`}

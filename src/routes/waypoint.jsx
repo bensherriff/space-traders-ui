@@ -15,10 +15,19 @@ export default function Waypoint() {
   }, [systemId, waypointId]);
 
   async function get_waypoint() {
-    invoke("get_waypoint", { token: Storage.getToken(), system: systemId, waypoint: waypointId}).then((response) => {
-      setWaypoint(response.data);
-      setWaypointTraits(response.data.traits);
-    })
+    if (Storage.hasWaypoint(waypointId)) {
+      const waypoint = Storage.getWaypoint(waypointId);
+      setWaypoint(waypoint);
+      setWaypointTraits(waypoint.traits);
+    } else {
+      invoke("get_waypoint", { token: Storage.getToken(), system: systemId, waypoint: waypointId}).then((response) => {
+        if (response && response.data) {
+          setWaypoint(response.data);
+          setWaypointTraits(response.data.traits);
+          Storage.setWaypoint(waypointId, response.data);
+        }
+      });
+    }
   }
 
   return (
@@ -74,7 +83,7 @@ export default function Waypoint() {
 
 function Marketplace({systemId, waypointId}) {
   const [market, setMarket] = useState({});
-  const [transactions, setTransactions] = useState([]);
+  const [stale, setStale] = useState(true);
 
   useEffect(() => {
     get_market();
@@ -82,22 +91,21 @@ function Marketplace({systemId, waypointId}) {
 
   async function get_market() {
     invoke("get_market", { token: Storage.getToken(), system: systemId, waypoint: waypointId}).then((response) => {
-      setMarket(response.data);
-
-      let t = response.data.transactions;
-      let transactions = [];
-      t.forEach(transaction => {
-        transactions.push([
-          transaction.shipSymbol,
-          transaction.shipSymbol,
-          transaction.shipSymbol,
-          transaction.shipSymbol,
-          transaction.shipSymbol,
-          transaction.shipSymbol,
-          transaction.shipSymbol
-        ]);
-      });
-      setTransactions(transactions);
+      if (response && response.data) {
+        if (response.data.transactions) {
+          Storage.setMarket(response.data.symbol, response.data);
+          setMarket(response.data);
+          setStale(false);
+        } else {
+          let market = {
+            ...response.data,
+            transactions: Storage.getMarket(response.data.symbol).transactions,
+            tradeGoods: Storage.getMarket(response.data.symbol).tradeGoods,
+          }
+          Storage.setMarket(response.data.symbol, market);
+          setMarket(market);
+        }
+      }
     });
   }
 
@@ -110,7 +118,7 @@ function Marketplace({systemId, waypointId}) {
           <div className='flex justify-center'>
           {market.transactions && Array.isArray(market.transactions)? (
             <div className='mx-2'>
-              <h2 className='text-center text-lg'>Transactions</h2>
+              <h2 className='text-center text-lg'>Transactions{stale? (<> (Stale)</>):<></>}</h2>
               <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
                 <thead className='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
                   <tr>
@@ -141,7 +149,7 @@ function Marketplace({systemId, waypointId}) {
           ): <></>}
           {market.tradeGoods && Array.isArray(market.tradeGoods)? (
             <div className='mx-2'>
-              <h2 className='text-center text-lg'>Trade Goods</h2>
+              <h2 className='text-center text-lg'>Trade Goods{stale? (<> (Stale)</>):<></>}</h2>
               <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
                 <thead className='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
                   <tr>

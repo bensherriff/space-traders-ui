@@ -14,9 +14,16 @@ export default function System() {
   }, [systemId]);
 
   async function get_system() {
-    invoke("get_system", { token: Storage.getToken(), system: systemId }).then((response) => {
-      setSystem(response.data);
-    })
+    if (Storage.hasSystem(systemId)) {
+      setSystem(Storage.getSystem(systemId));
+    } else {
+      invoke("get_system", { token: Storage.getToken(), system: systemId }).then((response) => {
+        if (response && response.data) {
+          setSystem(response.data);
+          Storage.setSystem(systemId, response.data);
+        }
+      });
+    }
   }
 
   return (
