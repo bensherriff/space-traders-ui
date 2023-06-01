@@ -175,9 +175,9 @@ export function SystemMap({system}) {
           ) {
             const split = object.symbol.split("-");
             if (split.length == 3) {
-              navigate(`/system/${split[0]}-${split[1]}/${object.symbol}`)
+              navigate(`/system/${split[0]}-${split[1]}/${object.symbol}`);
             } else if (split.length == 2) {
-              navigate(`/system/${split[0]}-${split[1]}`)
+              navigate(`/system/${split[0]}-${split[1]}`);
             }
           }
         })

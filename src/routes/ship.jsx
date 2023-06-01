@@ -18,12 +18,15 @@ export default function Ship() {
     get_ship();
   }, []);
 
+  function update_ship(ship) {
+    setShip(ship);
+  }
+
   async function get_ship() {
     invoke("get_ship", { token: Storage.getToken(), symbol: shipId}).then(response => {
       if (response && response.data) {
         setShip(response.data);
         setError("");
-        console.log(response.data);
       } else if (response && response.error) {
         setError(response.error);
       }
@@ -43,14 +46,13 @@ export default function Ship() {
   }
 
   return (
-    <div>
+    <>
       <Error error={error}/>
       {ship && ship.symbol? (
         <div>
           <div className='my-4 p-2 border-stone-900 border-2 text-l shadow-md bg-stone-700 rounded-xl'>
             <span className='flex'>
               <h1 className='font-bold mr-4'>{ship.registration.name} <i>{Text.capitalize(ship.registration.role)} {ship.frame.name.split(" ")[1]}</i></h1>
-              <NavStatusLink ship={ship}/>
             </span>
             <div className='flex justify-between'>
               <ProgressBarWithLabel label="Condition" text={`${ship.frame.condition}/100`} percentage={ship.frame.condition} />
@@ -77,13 +79,13 @@ export default function Ship() {
             </div>
           </div>
           <CargoInfo ship={ship}/>
-          <Navigation ship={ship}/>
+          <Navigation ship={ship} updateShip={update_ship}/>
           <div className='flex justify-center'>
             <ModulesInfo ship={ship}/>
             <MountsInfo ship={ship}/>
           </div>
         </div>
       ):<></>}
-    </div>
+    </>
   )
 }

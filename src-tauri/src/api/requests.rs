@@ -85,6 +85,8 @@ pub async fn post_request<T: de::DeserializeOwned>(token: String, url: String, b
     Some(b) => {
       response = client.post(uri)
         .bearer_auth(token)
+        .header("Content-Length", b.len())
+        .header("Content-Type", "application/json".to_string())
         .body(b)
         .send()
         .await?

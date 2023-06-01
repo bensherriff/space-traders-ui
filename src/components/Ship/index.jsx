@@ -1,5 +1,7 @@
-import {NavLink} from 'react-router-dom';
-import { Text } from '../../js';
+import {NavLink, useNavigate} from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/tauri";
+import { Storage, Text } from '../../js';
 import { ProgressBarWithLabel, ProgressBar } from '../ProgressBar';
 
 export function ShipInfo({ship}) {
@@ -24,24 +26,22 @@ export function NavStatusLink({ship}) {
     return (
       <span>
         In transit to <NavLink to={`/system/${ship.nav.systemSymbol}/${ship.nav.waypointSymbol}`}>
-          {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.destination.type)})
-          </NavLink>
+          {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.destination.type)}) </NavLink>
+        (Arrival: {Text.date(ship.nav.route.arrival)})
       </span>
     )
   } else if (ship.nav.status === "IN_ORBIT") {
     return (
       <span>
         Orbiting <NavLink to={`/system/${ship.nav.systemSymbol}/${ship.nav.waypointSymbol}`}>
-          {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.departure.type)})
-        </NavLink>
+          {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.destination.type)})</NavLink>
       </span>
     )
   } else if (ship.nav.status === "DOCKED") {
     return (
       <span>
         Docked at <NavLink to={`/system/${ship.nav.systemSymbol}/${ship.nav.waypointSymbol}`}>
-          {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.departure.type)})
-        </NavLink>
+          {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.destination.type)})</NavLink>
       </span>
     )
   }
@@ -50,15 +50,15 @@ export function NavStatusLink({ship}) {
 export function NavStatus({ship}) {
   if (ship.nav.status === "IN_TRANSIT") {
     return (
-      <span>In transit to {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.destination.type)})</span>
+      <span>In transit to {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.destination.type)}) (Arrival: {Text.date(ship.nav.route.arrival)})</span>
     )
   } else if (ship.nav.status === "IN_ORBIT") {
     return (
-      <span>Orbiting {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.departure.type)})</span>
+      <span>Orbiting {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.destination.type)})</span>
     )
   } else if (ship.nav.status === "DOCKED") {
     return (
-      <span>Docked at {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.departure.type)})</span>
+      <span>Docked at {ship.nav.waypointSymbol} ({Text.capitalize(ship.nav.route.destination.type)})</span>
     )
   }
 }
@@ -156,10 +156,98 @@ export function MountsInfo({ship}) {
   )
 }
 
-export function Navigation({ship}) {
+export function Navigation({ship, updateShip}) {
+  const [system, setSystem] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (ship.nav.status !== "IN_TRANSIT") {
+      get_system();
+    }
+  }, []);
+
+  async function orbit_ship() {
+    invoke("orbit_ship", { token: Storage.getToken(), symbol: ship.symbol}).then(response => {
+      if (response && response.data) {
+        updateShip({
+          ...ship,
+          nav: response.data.nav
+        });
+      }
+    });
+  }
+
+  async function dock_ship() {
+    invoke("dock_ship", { token: Storage.getToken(), symbol: ship.symbol}).then(response => {
+      if (response && response.data) {
+        updateShip({
+          ...ship,
+          nav: response.data.nav
+        });
+      }
+    });
+  }
+
+  async function get_system() {
+    invoke("get_system", { token: Storage.getToken(), system: ship.nav.systemSymbol}).then(response => {
+      if (response && response.data) {
+        setSystem(response.data);
+        console.log(response);
+      }
+    });
+  }
+
+  async function navigate_ship(e) {
+    e.preventDefault();
+    const destination = e.target['select-system'].value;
+    invoke("navigate_ship", { token: Storage.getToken(), symbol: ship.symbol, waypoint: destination}).then(response => {
+      if (response && response.data) {
+        updateShip({
+          ...ship,
+          fuel: {
+            ...ship.fuel,
+            current: response.data.fuel.current
+          },
+          nav: response.data.nav
+        });
+        const timeout = (new Date(ship.nav.route.arrival).getTime() - Date.now()) * 1000;
+        console.log('timeout', timeout);
+        setTimeout(() => {
+          navigate(0);
+        }, timeout);
+      }
+    });
+  }
+
+  async function get_waypoint() {
+
+  }
+
   return (
     <div className='my-4 p-2 border-stone-900 border-2 text-l shadow-md bg-stone-700 rounded-xl'>
       <h1 className='text-lg mr-4'>Navigation</h1>
+      <NavStatusLink ship={ship}/>
+      {ship.nav.status === "IN_ORBIT"? (
+        <button onClick={dock_ship}>Dock</button>
+      ): ship.nav.status === "DOCKED"? (
+        <button onClick={orbit_ship}>Orbit</button>
+      ): <></>}
+      {system && system.waypoints && ship.nav.status !== "IN_TRANSIT"? (
+        <form method='post' onSubmit={navigate_ship}>
+          <select className='text-black bg-stone-200' name='select-system' id='select-system'>
+            {system.waypoints.map((waypoint, index) => (
+              <>
+                {waypoint.symbol === ship.nav.waypointSymbol? (
+                  <option key={`select-system_${index}`} value={waypoint.symbol} disabled>{Text.capitalize(waypoint.type)} {waypoint.symbol}</option>
+                ): (
+                  <option key={`select-system_${index}`} value={waypoint.symbol}>{Text.capitalize(waypoint.type)} {waypoint.symbol}</option>
+                )}
+              </>
+            ))}
+          </select>
+          <button type='submit'>Navigate</button>
+        </form>
+      ): <></>}
     </div>
   )
 }
