@@ -2,9 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use core::time;
-use std::{thread, fs::{File}, io::{BufWriter, Write}, path::Path};
+use std::{thread, fs::{File, create_dir}, io::{BufWriter, Write, BufReader, BufRead}, path::Path};
 
 use async_recursion::async_recursion;
+use models::system::System;
 
 mod api;
 mod models;
@@ -62,18 +63,95 @@ fn main() {
 
 #[tauri::command]
 async fn database_init(token: String) -> bool {
-  const LIMIT: u64 = 20;
-
-  let path  = match std::env::current_dir() {
-    Ok(p) => p,
+  let app_path  = match std::env::current_dir() {
+    Ok(p) => {
+      match create_dir(Path::new(&p).join("data")) {
+        Ok(_) => {},
+        Err(_) => {}
+      };
+      p
+    },
     Err(err) => {
       println!("{:#?}", err);
       return false;
     }
   };
 
-  let file = match File::create(Path::new(&path).join("systems.json")) {
-    Ok(file) => file,
+  let systems_path = Path::new(&app_path).join("data").join("systems.json");
+  if !systems_path.exists() {
+    if write_systems_file(token, &systems_path).await {
+      load_database(&systems_path)
+    } else {
+        false
+    }
+  } else {
+    load_database(&systems_path)
+  }
+}
+
+fn load_database(systems_path: &Path) -> bool {
+  let systems_db = match sled::open("/db/systems") {
+    Ok(db) => db,
+    Err(err) => {
+      println!("{:#?}", err);
+      return false;
+    }
+  };
+
+  let mut contents = "".to_string();
+  let file = match File::open(systems_path) {
+    Ok(f) => f,
+    Err(err) => {
+      println!("{:#?}", err);
+      return false;
+    }
+  };
+  let reader = BufReader::new(file);
+
+  for line in reader.lines() {
+    let parsed_line = match line {
+      Ok(_line) => _line,
+      Err(err) => {
+        println!("{:#?}", err);
+        return false;
+      }
+    };
+    contents = format!("{}{}", contents, parsed_line);
+  }
+
+  let systems = match serde_json::from_str::<Vec<System>>(contents.as_str()) {
+    Ok(_systems) => _systems,
+    Err(err) => {
+      println!("{:#?}", err);
+      return false;
+    }
+  };
+
+  for system in systems {
+    match systems_db.insert(system.symbol, "") {
+      Ok(_) => {},
+      Err(err) => {
+        println!("{:#?}", err);
+        return false;
+      }
+    };
+  }
+  true
+}
+
+async fn write_systems_file(token: String, systems_path: &Path) -> bool {
+  const LIMIT: u64 = 20;
+  let mut file = match File::create(systems_path) {
+    Ok(mut file) => {
+      match file.write_all(b"[") {
+        Ok(_) => {},
+        Err(err) => {
+          println!("{:#?}", err);
+          return false;
+        }
+      }
+      file
+    },
     Err(err) => {
       println!("{:#?}", err);
       return false;
@@ -85,7 +163,7 @@ async fn database_init(token: String) -> bool {
   let max_pages: u64 = match _response.meta {
     Some(meta) => {
       println!("{:#?}", meta);
-      (meta.total as f64 / LIMIT as f64).ceil() as u64
+      (meta.total as f64 / LIMIT as f64).ceil() as u64 + 1
     },
     None => 1
   };
@@ -97,6 +175,14 @@ async fn database_init(token: String) -> bool {
       return false;
     }
   };
+
+  match file.write_all(b"]") {
+    Ok(_) => {},
+    Err(err) => {
+      println!("{:#?}", err);
+      return false;
+    }
+  }
   true
 }
 
@@ -106,9 +192,17 @@ async fn load_systems_db(file: &File, token: String, limit: u64, page: u64, atte
   let response: api::requests::ResponseObject<Vec<models::system::System>> = api::systems::list_systems(token.to_string(), limit, page).await;
   match response.data {
     Some(data) => {
-      println!("Processing page {}", page);
-      for (_index, system) in data.iter().enumerate() {
-        let string = serde_json::json!(system).to_string();
+      println!("Processing page {} ({} results)", page, data.len());
+      for (index, system) in data.iter().enumerate() {
+        let string = if index == 0 && page > 1 && index < data.len() - 1 {
+          format!(",{},", serde_json::json!(system).to_string())
+        } else if index == 0 && page > 1 {
+          format!(",{}", serde_json::json!(system).to_string())
+        } else if index < data.len() - 1 {
+          format!("{},", serde_json::json!(system).to_string())
+        } else {
+          format!("{}", serde_json::json!(system).to_string())
+        };
         match write!(writer, "{}", string) {
           Ok(_) => {},
           Err(err) => {

@@ -8,6 +8,7 @@ import { Button } from "..";
 export default function Login( { setAgent } ) {
   const [token, setToken] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [loadDatabaseStatus, setLoadDatabaseStatus] = useState("Load Database Data");
   const [status, setStatus] = useState({});
   const navigate = useNavigate();
 
@@ -25,9 +26,14 @@ export default function Login( { setAgent } ) {
   }
 
   async function load_database_data() {
+    setLoadDatabaseStatus("Loading Database");
     await invoke("database_init", { token: token }).then(response => {
-      console.log(`Systems database loaded: ${response}`);
-      Storage.setSessionStorage('systems_db_loaded', true);
+      if (response) {
+        setLoadDatabaseStatus("Database Loaded");
+        Storage.setSessionStorage('systems_db_loaded', true);
+      } else {
+        setLoadDatabaseStatus("Load Database Data");
+      }
     });
   }
 
@@ -86,7 +92,7 @@ export default function Login( { setAgent } ) {
           <i className="text-center flex">{status.description}</i>
           <ul>
             <li>Next Reset: {Text.date(status.serverResets.next)}</li>
-            <li><Button className="w-44" onClick={load_database_data}>Load Database Data (Warning: Slow)</Button></li>
+            <li><Button disabled={loadDatabaseStatus != 'Load Database Data'} className="w-44" onClick={load_database_data}>{loadDatabaseStatus}</Button></li>
           </ul>
           <div className="mt-4 flex justify-between">
             <div className="mx-4 w-1/4">

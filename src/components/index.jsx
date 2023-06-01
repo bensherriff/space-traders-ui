@@ -22,10 +22,16 @@ export function ErrorText({children}) {
   )
 }
 
-export function Button({className='', onClick=() => {}, children=(<></>)}) {
-  return (
-    <button className={`${className} bg-cyan-600 hover:bg-cyan-800 shadow-md rounded-xl m-1 p-1 text-white`} onClick={onClick}>{children}</button>
-  )
+export function Button({className='', onClick=() => {}, children=(<></>), disabled=false}) {
+  if (disabled) {
+    return (
+      <button disabled className={`${className} bg-stone-600 shadow-md rounded-xl m-1 p-1 text-white`} onClick={onClick}>{children}</button>
+    )
+  } else {
+    return (
+      <button className={`${className} bg-cyan-600 hover:bg-cyan-800 shadow-md rounded-xl m-1 p-1 text-white`} onClick={onClick}>{children}</button>
+    )
+  }
 }
 
 export function CountdownTimer({duration = 0}) {
