@@ -1,15 +1,19 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use data::{Database};
-
 mod api;
 mod data;
 mod models;
 
 fn main() {
   tauri::Builder::default()
-    .manage(Database::new())
+    .plugin(tauri_plugin_store::Builder::default().build())
+    .plugin(tauri_plugin_sql::Builder::default().build())
+    .setup(|_app| {
+      data::db::init();
+
+      Ok(())
+    })
     .invoke_handler(tauri::generate_handler![
       data::database_init,
       api::agents::get_my_agent,

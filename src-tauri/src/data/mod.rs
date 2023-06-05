@@ -1,57 +1,26 @@
 use core::time;
-use std::{thread, fs::{File, create_dir}, io::{BufWriter, Write, BufReader, BufRead}, path::Path, collections::HashMap};
+use std::{thread, fs::{File, create_dir, create_dir_all}, io::{BufWriter, Write, BufReader, BufRead}, path::{Path, PathBuf}};
 
 use async_recursion::async_recursion;
-use tauri::State;
 
-use crate::{models::{system::System, waypoint::Waypoint, market::Market, shipyard::Shipyard}, api::{systems::list_systems, requests::{ResponseObject}}};
+use crate::{models::{system::System}, api::{systems::list_systems, requests::{ResponseObject}}};
 
-pub struct Database {
-  systems: HashMap<String, System>,
-  waypoints: HashMap<String, Waypoint>,
-  markets: HashMap<String, Market>,
-  shipyards: HashMap<String, Shipyard>
+pub mod db;
+
+pub fn dir() -> PathBuf {
+  std::env::current_dir().unwrap()
 }
 
-impl Database {
-  pub fn new() -> Database {
-    Database {
-      systems: HashMap::new(),
-      waypoints: HashMap::new(),
-      markets: HashMap::new(),
-      shipyards: HashMap::new()
-    }
+pub fn data_dir() -> PathBuf {
+  let path = Path::new(&dir()).join("data");
+  if !path.exists() {
+    create_dir_all(&path).unwrap();
   }
-
-  pub fn has_system(&self, key: &String) -> bool {
-    self.systems.contains_key(key)
-  }
-
-  pub fn get_system(&self, key: &String) -> ResponseObject<System> {
-    if self.has_system(key) {
-      let system = self.systems.get(key).unwrap();
-      return ResponseObject { data: Some(system.to_owned()), error: None, meta: None }
-    } else {
-      return ResponseObject { data: None, error: None, meta: None }
-    }
-  }
-
-  pub fn set_system(&mut self, key: &String, value: System) {
-    self.systems.insert(key.to_string(), value);
-  }
-
-  pub fn get_waypoint(&self, key: &String) -> ResponseObject<Waypoint> {
-    if self.waypoints.contains_key(key) {
-      let waypoint = self.waypoints.get(key).unwrap();
-      return ResponseObject { data: Some(waypoint.to_owned()), error: None, meta: None }
-    } else {
-      return ResponseObject { data: None, error: None, meta: None }
-    }
-  }
+  path
 }
 
 #[tauri::command]
-pub async fn database_init(token: String, state: State<'_, Database>) -> Result<bool, ()> {
+pub async fn database_init(token: String) -> Result<bool, ()> {
   let app_path  = match std::env::current_dir() {
     Ok(p) => {
       match create_dir(Path::new(&p).join("data")) {
@@ -68,17 +37,17 @@ pub async fn database_init(token: String, state: State<'_, Database>) -> Result<
 
   let systems_path = Path::new(&app_path).join("data").join("systems.json");
   if !systems_path.exists() {
-    if write_systems_file(token, &systems_path, state).await {
+    if write_systems_file(token, &systems_path).await {
       Ok(true)
     } else {
-        Ok(false)
+      Ok(false)
     }
   } else {
-    Ok(load_systems_db(&systems_path, &state))
+    Ok(load_systems_db(&systems_path))
   }
 }
 
-async fn write_systems_file(token: String, systems_path: &Path, state: State<'_, Database>) -> bool {
+async fn write_systems_file(token: String, systems_path: &Path) -> bool {
   const LIMIT: u64 = 20;
   let mut file = match File::create(systems_path) {
     Ok(mut file) => {
@@ -109,7 +78,7 @@ async fn write_systems_file(token: String, systems_path: &Path, state: State<'_,
 
   // Store system results
   for page in 1..max_pages {
-    let result = update_systems_db(&file, token.to_string(), LIMIT, page, 3, &state).await;
+    let result = update_systems_db(&file, token.to_string(), LIMIT, page, 3).await;
     if !result {
       return false;
     }
@@ -125,7 +94,7 @@ async fn write_systems_file(token: String, systems_path: &Path, state: State<'_,
   true
 }
 
-fn load_systems_db(path: &Path, state: &State<'_, Database>) -> bool {
+fn load_systems_db(path: &Path) -> bool {
   let file: File = File::open(path).unwrap();
   let reader = BufReader::new(file);
   let mut content: String = "".to_string();
@@ -147,23 +116,17 @@ fn load_systems_db(path: &Path, state: &State<'_, Database>) -> bool {
       return false;
     }
   };
-  let mut state_systems = state.systems.to_owned();
-  for system in systems {
-    state_systems.insert(system.symbol.to_string(), system.to_owned());
-  }
   true
 }
 
 #[async_recursion]
-async fn update_systems_db(file: &File, token: String, limit: u64, page: u64, attempts: u64, state: &State<'_, Database>) -> bool {
-  let mut systems = state.systems.to_owned();
+async fn update_systems_db(file: &File, token: String, limit: u64, page: u64, attempts: u64) -> bool {
   let mut writer = BufWriter::new(file);
   let response: ResponseObject<Vec<System>> = list_systems(token.to_string(), limit, page).await;
   match response.data {
     Some(data) => {
       println!("Processing page {} ({} results)", page, data.len());
       for (index, system) in data.iter().enumerate() {
-        systems.insert(system.symbol.to_string(), system.to_owned());
         let string = if index == 0 && page > 1 && index < data.len() - 1 {
           format!(",{},", serde_json::json!(system).to_string())
         } else if index == 0 && page > 1 {
@@ -188,7 +151,7 @@ async fn update_systems_db(file: &File, token: String, limit: u64, page: u64, at
         Some(error) => {
           if error.code == 429 && attempts > 0 {
             thread::sleep(time::Duration::from_secs(1));
-            return update_systems_db(file, token, limit, page, attempts - 1, state).await
+            return update_systems_db(file, token, limit, page, attempts - 1).await
           } else {
             return false;
           }
