@@ -1,5 +1,5 @@
 use core::time;
-use std::{thread, fs::{File, create_dir}, io::{BufWriter, Write}, path::Path, collections::HashMap, sync::Mutex};
+use std::{thread, fs::{File, create_dir}, io::{BufWriter, Write, BufReader, BufRead}, path::Path, collections::HashMap};
 
 use async_recursion::async_recursion;
 use tauri::State;
@@ -23,18 +23,26 @@ impl Database {
     }
   }
 
-  pub fn get_system(&self, key: String) -> ResponseObject<System>{
-    if self.systems.contains_key(&key) {
-      let system = self.systems.get(&key).unwrap();
+  pub fn has_system(&self, key: &String) -> bool {
+    self.systems.contains_key(key)
+  }
+
+  pub fn get_system(&self, key: &String) -> ResponseObject<System> {
+    if self.has_system(key) {
+      let system = self.systems.get(key).unwrap();
       return ResponseObject { data: Some(system.to_owned()), error: None, meta: None }
     } else {
       return ResponseObject { data: None, error: None, meta: None }
     }
   }
 
-  pub fn get_waypoint(&self, key: String) -> ResponseObject<Waypoint> {
-    if self.waypoints.contains_key(&key) {
-      let waypoint = self.waypoints.get(&key).unwrap();
+  pub fn set_system(&mut self, key: &String, value: System) {
+    self.systems.insert(key.to_string(), value);
+  }
+
+  pub fn get_waypoint(&self, key: &String) -> ResponseObject<Waypoint> {
+    if self.waypoints.contains_key(key) {
+      let waypoint = self.waypoints.get(key).unwrap();
       return ResponseObject { data: Some(waypoint.to_owned()), error: None, meta: None }
     } else {
       return ResponseObject { data: None, error: None, meta: None }
@@ -43,7 +51,7 @@ impl Database {
 }
 
 #[tauri::command]
-pub async fn database_init(token: String) -> Result<bool, ()> {
+pub async fn database_init(token: String, state: State<'_, Database>) -> Result<bool, ()> {
   let app_path  = match std::env::current_dir() {
     Ok(p) => {
       match create_dir(Path::new(&p).join("data")) {
@@ -60,17 +68,17 @@ pub async fn database_init(token: String) -> Result<bool, ()> {
 
   let systems_path = Path::new(&app_path).join("data").join("systems.json");
   if !systems_path.exists() {
-    if write_systems_file(token, &systems_path).await {
+    if write_systems_file(token, &systems_path, state).await {
       Ok(true)
     } else {
         Ok(false)
     }
   } else {
-    Ok(true)
+    Ok(load_systems_db(&systems_path, &state))
   }
 }
 
-async fn write_systems_file(token: String, systems_path: &Path) -> bool {
+async fn write_systems_file(token: String, systems_path: &Path, state: State<'_, Database>) -> bool {
   const LIMIT: u64 = 20;
   let mut file = match File::create(systems_path) {
     Ok(mut file) => {
@@ -101,7 +109,7 @@ async fn write_systems_file(token: String, systems_path: &Path) -> bool {
 
   // Store system results
   for page in 1..max_pages {
-    let result = load_systems_db(&file, token.to_string(), LIMIT, page, 3).await;
+    let result = update_systems_db(&file, token.to_string(), LIMIT, page, 3, &state).await;
     if !result {
       return false;
     }
@@ -117,14 +125,45 @@ async fn write_systems_file(token: String, systems_path: &Path) -> bool {
   true
 }
 
+fn load_systems_db(path: &Path, state: &State<'_, Database>) -> bool {
+  let file: File = File::open(path).unwrap();
+  let reader = BufReader::new(file);
+  let mut content: String = "".to_string();
+  for line in reader.lines() {
+    match line {
+      Ok(_line) => {
+        content = format!("{}{}", content, _line);
+      }
+      Err(err) => {
+        println!("{:#?}", err);
+        return false;
+      }
+    }
+  }
+  let systems: Vec<System> = match serde_json::from_str(content.as_str()) {
+    Ok(_systems) => _systems,
+    Err(err) => {
+      println!("{:#?}", err);
+      return false;
+    }
+  };
+  let mut state_systems = state.systems.to_owned();
+  for system in systems {
+    state_systems.insert(system.symbol.to_string(), system.to_owned());
+  }
+  true
+}
+
 #[async_recursion]
-async fn load_systems_db(file: &File, token: String, limit: u64, page: u64, attempts: u64) -> bool {
+async fn update_systems_db(file: &File, token: String, limit: u64, page: u64, attempts: u64, state: &State<'_, Database>) -> bool {
+  let mut systems = state.systems.to_owned();
   let mut writer = BufWriter::new(file);
   let response: ResponseObject<Vec<System>> = list_systems(token.to_string(), limit, page).await;
   match response.data {
     Some(data) => {
       println!("Processing page {} ({} results)", page, data.len());
       for (index, system) in data.iter().enumerate() {
+        systems.insert(system.symbol.to_string(), system.to_owned());
         let string = if index == 0 && page > 1 && index < data.len() - 1 {
           format!(",{},", serde_json::json!(system).to_string())
         } else if index == 0 && page > 1 {
@@ -149,7 +188,7 @@ async fn load_systems_db(file: &File, token: String, limit: u64, page: u64, atte
         Some(error) => {
           if error.code == 429 && attempts > 0 {
             thread::sleep(time::Duration::from_secs(1));
-            return load_systems_db(file, token, limit, page, attempts - 1).await
+            return update_systems_db(file, token, limit, page, attempts - 1, state).await
           } else {
             return false;
           }

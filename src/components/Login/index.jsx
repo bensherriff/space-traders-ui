@@ -28,7 +28,6 @@ export default function Login( { setAgent } ) {
   async function load_database_data() {
     setLoadDatabaseStatus("Loading Database");
     await invoke("database_init", { token: token }).then(response => {
-      console.log(response);
       if (response) {
         setLoadDatabaseStatus("Database Loaded");
         Storage.setSessionStorage('systems_db_loaded', true);
