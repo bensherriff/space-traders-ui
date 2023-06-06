@@ -161,11 +161,13 @@ export function MountsInfo({ship}) {
 
 export function Navigation({ship, updateShip}) {
   const [system, setSystem] = useState(null);
+  const [waypoint, setWaypoint] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (ship.nav.status !== "IN_TRANSIT") {
       get_system();
+      get_waypoint();
     }
   }, []);
 
@@ -192,9 +194,18 @@ export function Navigation({ship, updateShip}) {
   }
 
   async function get_system() {
-    invoke("get_system", { token: Storage.getToken(), system: ship.nav.systemSymbol}).then(response => {
+    invoke("get_system", { token: Storage.getToken(), system: ship.nav.systemSymbol }).then(response => {
       if (response && response.data) {
         setSystem(response.data);
+      }
+    });
+  }
+
+  async function get_waypoint() {
+    invoke("get_waypoint", { token: Storage.getToken(), system: ship.nav.systemSymbol, waypoint: ship.nav.waypointSymbol }).then(response => {
+      if (response && response.data) {
+        console.log(response);
+        setWaypoint(response.data);
       }
     });
   }
@@ -227,10 +238,6 @@ export function Navigation({ship, updateShip}) {
     });
   }
 
-  async function get_waypoint() {
-
-  }
-
   return (
     <div className='my-4 p-2 border-stone-900 border-2 text-l shadow-md bg-stone-700 rounded-xl'>
       <h1 className='text-lg mr-4'>Navigation</h1>
@@ -241,20 +248,22 @@ export function Navigation({ship, updateShip}) {
         <Button className='ml-1' onClick={orbit_ship}>Orbit</Button>
       ): <></>}
       {system && system.waypoints && ship.nav.status !== "IN_TRANSIT"? (
-        <form method='post' onSubmit={navigate_ship}>
-          <select className='text-black bg-stone-200' name='select-system' id='select-system'>
-            {system.waypoints.map((waypoint, index) => (
-              <>
-                {waypoint.symbol === ship.nav.waypointSymbol? (
-                  <option key={`select-system_${index}`} value={waypoint.symbol} disabled>{Text.capitalize(waypoint.type)} {waypoint.symbol}</option>
-                ): (
-                  <option key={`select-system_${index}`} value={waypoint.symbol}>{Text.capitalize(waypoint.type)} {waypoint.symbol}</option>
-                )}
-              </>
-            ))}
-          </select>
-          <Button className='ml-1' type='submit'>Navigate</Button>
-        </form>
+        <>
+          <form method='post' onSubmit={navigate_ship}>
+            <select className='text-black bg-stone-200' name='select-system' id='select-system'>
+              {system.waypoints.map((waypoint, index) => (
+                <>
+                  {waypoint.symbol === ship.nav.waypointSymbol? (
+                    <option key={`select-system_${index}`} value={waypoint.symbol} disabled>{Text.capitalize(waypoint.type)} {waypoint.symbol}</option>
+                  ): (
+                    <option key={`select-system_${index}`} value={waypoint.symbol}>{Text.capitalize(waypoint.type)} {waypoint.symbol}</option>
+                  )}
+                </>
+              ))}
+            </select>
+            <Button className='ml-1' type='submit'>Navigate</Button>
+          </form>
+        </>
       ): <></>}
     </div>
   )

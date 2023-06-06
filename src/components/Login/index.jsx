@@ -113,9 +113,7 @@ export default function Login( { setAgent } ) {
             <div className="mx-4 w-1/4">
               <h1 className="text-center text-2xl">Links</h1>
               {status.links.map((link, index) => (
-                <div>
-                  <a key={index} className="block p-2 mb-2 bg-[#4b5563] hover:bg-[#2b3e58] shadow-md rounded-md select-none text-center" href={link.url}>{link.name}</a>
-                </div>
+                <a key={index} className="block p-2 mb-2 bg-[#4b5563] hover:bg-[#2b3e58] shadow-md rounded-md select-none text-center" href={link.url}>{link.name}</a>
               ))}
             </div>
           </div>

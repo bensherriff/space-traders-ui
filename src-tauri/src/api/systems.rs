@@ -1,4 +1,4 @@
-use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}};
+use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, data::db::insert_into_systems};
 
 use super::requests::{ResponseObject, get_request, handle_result};
 
@@ -18,7 +18,14 @@ pub async fn list_systems(token: String, limit: u64, page: u64) -> ResponseObjec
 #[tauri::command]
 pub async fn get_system(token: String, system: String) -> ResponseObject<System> {
   let url = format!("/systems/{}", system);
-  handle_result(get_request::<System>(token, url, None).await)
+  let result = handle_result(get_request::<System>(token, url, None).await);
+  match &result.data {
+    Some(data) => {
+      insert_into_systems(data);
+    }
+    None => {}
+  };
+  result
 }
 
 /// Return a list of all waypoints.
