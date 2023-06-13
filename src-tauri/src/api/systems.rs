@@ -1,4 +1,4 @@
-use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, data::db::insert_into_systems};
+use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, data::db::insert_system};
 
 use super::requests::{ResponseObject, get_request, handle_result};
 
@@ -21,7 +21,7 @@ pub async fn get_system(token: String, system: String) -> ResponseObject<System>
   let result = handle_result(get_request::<System>(token, url, None).await);
   match &result.data {
     Some(data) => {
-      insert_into_systems(data);
+      insert_system(data);
     }
     None => {}
   };

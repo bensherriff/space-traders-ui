@@ -10,12 +10,9 @@ fn main() {
     .plugin(tauri_plugin_store::Builder::default().build())
     .plugin(tauri_plugin_sql::Builder::default().build())
     .setup(|_app| {
-      data::db::init();
-
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
-      data::database_init,
       api::agents::get_my_agent,
       api::contracts::list_contracts,
       api::contracts::get_contract,

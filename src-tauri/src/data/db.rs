@@ -1,42 +1,21 @@
-use std::fs::File;
-use std::path::PathBuf;
-use std::path::Path;
+use crate::{models::system::System, data::{models::NewSystemDB, establish_connection}};
 
-use diesel::prelude::*;
-use diesel::sqlite::SqliteConnection;
+use diesel::RunQueryDsl;
 
-use crate::models::system::System;
-
-use super::data_dir;
-
-pub fn init() {
-  create_file();
-}
-
-pub fn create_file() {
-  let db_path = get_path_string();
-  let path = Path::new(&db_path);
-  File::create(path).unwrap();
-}
-
-pub fn establish_systems_connection() -> SqliteConnection {
-  let db_path = &get_path_string();
-  SqliteConnection::establish(db_path)
-  .unwrap_or_else(|_| panic!("Error connecting to {}", db_path))
-}
-
-pub fn insert_into_systems(system: &System) {
-
-  // insert_into(systems).default_values().execute(get_systems_connection());
-}
-
-pub fn get_path() -> PathBuf {
-  Path::new(&data_dir()).join("systems.db")
-}
-
-pub fn get_path_string() -> String {
-  match get_path().as_path().to_str() {
-    Some(path) => path.to_string(),
-    None => panic!("Error")
-  }
+pub fn insert_system(system: &System) {
+  use crate::data::schema::systems;
+  let connection = &mut establish_connection();
+  let _system = NewSystemDB {
+    symbol: &system.symbol,
+    sector_symbol: &system.sector_symbol,
+    system_type: &system.system_type.to_string(),
+    x: system.x as i32,
+    y: system.y as i32,
+    waypoints: "",
+    factions: ""
+  };
+  diesel::insert_or_ignore_into(systems::table)
+    .values(&_system)
+    .execute(connection)
+    .expect("Error saving new system");
 }

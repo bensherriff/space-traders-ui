@@ -26,15 +26,15 @@ export default function Login( { setAgent } ) {
   }
 
   async function load_database_data() {
-    setLoadDatabaseStatus("Loading Database");
-    await invoke("database_init", { token: token }).then(response => {
-      if (response) {
-        setLoadDatabaseStatus("Database Loaded");
-        Storage.setSessionStorage('systems_db_loaded', true);
-      } else {
-        setLoadDatabaseStatus("Load Database Data");
-      }
-    });
+    // setLoadDatabaseStatus("Loading Database");
+    // await invoke("database_init", { token: token }).then(response => {
+    //   if (response) {
+    //     setLoadDatabaseStatus("Database Loaded");
+    //     Storage.setSessionStorage('systems_db_loaded', true);
+    //   } else {
+    //     setLoadDatabaseStatus("Load Database Data");
+    //   }
+    // });
   }
 
   async function get_my_agent() {
