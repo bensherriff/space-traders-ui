@@ -20,9 +20,9 @@ pub struct System {
 pub struct SystemWaypoint {
   pub symbol: String,
   #[serde(rename = "type")]
-  pub system_type: WaypointType,
-  x: i64,
-  y: i64
+  pub waypoint_type: WaypointType,
+  pub x: i64,
+  pub y: i64
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

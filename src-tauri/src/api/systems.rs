@@ -1,3 +1,6 @@
+use diesel::{SqliteConnection, r2d2::{ConnectionManager, Pool}};
+use tauri::State;
+
 use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, data::db::insert_system};
 
 use super::requests::{ResponseObject, get_request, handle_result};
@@ -16,16 +19,16 @@ pub async fn list_systems(token: String, limit: u64, page: u64) -> ResponseObjec
 
 /// Get the details of a system.
 #[tauri::command]
-pub async fn get_system(token: String, system: String) -> ResponseObject<System> {
+pub async fn get_system(pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, system: String) -> Result<ResponseObject<System>, ()> {
   let url = format!("/systems/{}", system);
   let result = handle_result(get_request::<System>(token, url, None).await);
   match &result.data {
     Some(data) => {
-      insert_system(data);
+      insert_system(&pool, data);
     }
     None => {}
   };
-  result
+  Ok(result)
 }
 
 /// Return a list of all waypoints.

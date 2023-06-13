@@ -15,19 +15,14 @@ export default function Waypoint() {
   }, [systemId, waypointId]);
 
   async function get_waypoint() {
-    if (Storage.hasWaypoint(waypointId)) {
-      const waypoint = Storage.getWaypoint(waypointId);
-      setWaypoint(waypoint);
-      setWaypointTraits(waypoint.traits);
-    } else {
-      invoke("get_waypoint", { token: Storage.getToken(), system: systemId, waypoint: waypointId}).then((response) => {
-        if (response && response.data) {
-          setWaypoint(response.data);
-          setWaypointTraits(response.data.traits);
-          Storage.setWaypoint(waypointId, response.data);
-        }
-      });
-    }
+    invoke("get_waypoint", { token: Storage.getToken(), system: systemId, waypoint: waypointId}).then((response) => {
+      if (response && response.data) {
+        setWaypoint(response.data);
+        setWaypointTraits(response.data.traits);
+      } else if (response && response.error) {
+        console.log(response.error);
+      }
+    });
   }
 
   return (

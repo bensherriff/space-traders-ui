@@ -1,6 +1,6 @@
-use std::{fs::{File, create_dir_all}, path::{Path, PathBuf}};
+use std::{fs::{File, create_dir_all}, path::{Path, PathBuf}, time::Duration};
 
-use diesel::prelude::*;
+use diesel::{prelude::*, r2d2::{Pool, ConnectionManager, CustomizeConnection}, connection::SimpleConnection};
 use diesel::sqlite::SqliteConnection;
 
 pub mod db;
@@ -29,10 +29,44 @@ pub fn create_file() {
   File::create(path).unwrap();
 }
 
-pub fn establish_connection() -> SqliteConnection {
+#[derive(Debug)]
+pub struct ConnectionOptions {
+  pub enable_wal: bool,
+  pub enable_foreign_keys: bool,
+  pub busy_timeout: Option<Duration>
+}
+
+impl CustomizeConnection<SqliteConnection, diesel::r2d2::Error> for ConnectionOptions {
+  fn on_acquire(&self, conn: &mut SqliteConnection) -> Result<(), diesel::r2d2::Error> {
+    (|| {
+      if self.enable_wal {
+        conn.batch_execute("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL;")?;
+      }
+      if self.enable_foreign_keys {
+        conn.batch_execute("PRAGMA foreign_keys = ON;")?;
+      }
+      if let Some(d) = self.busy_timeout {
+        conn.batch_execute(&format!("PRAGMA busy_timeout = {};", d.as_millis()))?;
+      }
+      Ok(())
+    })()
+    .map_err(diesel::r2d2::Error::QueryError)
+  }
+
+  fn on_release(&self, conn: SqliteConnection) {}
+}
+
+pub fn connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
   let db_path = &get_path_string();
-  SqliteConnection::establish(db_path)
-  .unwrap_or_else(|_| panic!("Error connecting to {}", db_path))
+  let manager = ConnectionManager::<SqliteConnection>::new(db_path);
+  Pool::builder()
+    .connection_customizer(Box::new(ConnectionOptions {
+      enable_wal: true,
+      enable_foreign_keys: true,
+      busy_timeout: Some(Duration::from_secs(30))
+    }))
+    .build(manager)
+    .unwrap()
 }
 
 pub fn get_path() -> PathBuf {

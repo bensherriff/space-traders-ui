@@ -14,18 +14,13 @@ export default function System() {
   }, [systemId]);
 
   async function get_system() {
-    if (Storage.hasSystem(systemId)) {
-      setSystem(Storage.getSystem(systemId));
-    } else {
-      invoke("get_system", { token: Storage.getToken(), system: systemId }).then((response) => {
-        if (response && response.data) {
-          setSystem(response.data);
-          Storage.setSystem(systemId, response.data);
-        } else if (response && response.error) {
-          console.log(response.error);
-        }
-      });
-    }
+    invoke("get_system", { token: Storage.getToken(), system: systemId }).then((response) => {
+      if (response && response.data) {
+        setSystem(response.data);
+      } else if (response && response.error) {
+        console.log(response.error);
+      }
+    });
   }
 
   return (

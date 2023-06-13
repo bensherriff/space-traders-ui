@@ -1,14 +1,20 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use data::{connection_pool};
+
 mod api;
 mod data;
 mod models;
 
 fn main() {
+  // let connection = establish_connection();
+  let pool = connection_pool();
+
   tauri::Builder::default()
     .plugin(tauri_plugin_store::Builder::default().build())
     .plugin(tauri_plugin_sql::Builder::default().build())
+    .manage(pool)
     .setup(|_app| {
       Ok(())
     })
