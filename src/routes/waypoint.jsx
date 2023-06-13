@@ -20,7 +20,7 @@ export default function Waypoint() {
         setWaypoint(response.data);
         setWaypointTraits(response.data.traits);
       } else if (response && response.error) {
-        console.log(response.error);
+        console.error(response.error);
       }
     });
   }
@@ -120,7 +120,6 @@ function JumpGate({systemId, waypointId}) {
 
 function Marketplace({systemId, waypointId}) {
   const [market, setMarket] = useState({});
-  const [stale, setStale] = useState(true);
 
   useEffect(() => {
     get_market();
@@ -129,19 +128,7 @@ function Marketplace({systemId, waypointId}) {
   async function get_market() {
     invoke("get_market", { token: Storage.getToken(), system: systemId, waypoint: waypointId}).then((response) => {
       if (response && response.data) {
-        if (response.data.transactions) {
-          Storage.setMarket(response.data.symbol, response.data);
-          setMarket(response.data);
-          setStale(false);
-        } else {
-          let market = {
-            ...response.data,
-            transactions: Storage.getMarket(response.data.symbol).transactions,
-            tradeGoods: Storage.getMarket(response.data.symbol).tradeGoods,
-          }
-          Storage.setMarket(response.data.symbol, market);
-          setMarket(market);
-        }
+        setMarket(response.data);
       }
     });
   }
@@ -155,7 +142,7 @@ function Marketplace({systemId, waypointId}) {
           <div className='flex justify-center'>
           {market.transactions && Array.isArray(market.transactions)? (
             <div className='mx-2'>
-              <h2 className='text-center text-lg'>Transactions{stale? (<> (Stale)</>):<></>}</h2>
+              <h2 className='text-center text-lg'>Transactions</h2>
               <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
                 <thead className='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
                   <tr>
@@ -186,7 +173,7 @@ function Marketplace({systemId, waypointId}) {
           ): <></>}
           {market.tradeGoods && Array.isArray(market.tradeGoods)? (
             <div className='mx-2'>
-              <h2 className='text-center text-lg'>Trade Goods{stale? (<> (Stale)</>):<></>}</h2>
+              <h2 className='text-center text-lg'>Trade Goods</h2>
               <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
                 <thead className='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
                   <tr>

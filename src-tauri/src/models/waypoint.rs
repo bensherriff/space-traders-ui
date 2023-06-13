@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
@@ -55,6 +55,25 @@ impl Display for WaypointType {
       WaypointType::DebrisField => write!(f, "Debris Field"),
       WaypointType::GravityWell => write!(f, "Gravity Well"),
     }
+  }
+}
+
+impl FromStr for WaypointType {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Planet" => Ok(WaypointType::Planet),
+        "Gas Giant" => Ok(WaypointType::GasGiant),
+        "Moon" => Ok(WaypointType::Moon),
+        "Orbital Station" => Ok(WaypointType::OrbitalStation),
+        "Jump Gate" => Ok(WaypointType::JumpGate),
+        "Asteroid Field" => Ok(WaypointType::AsteroidField),
+        "Nebula" => Ok(WaypointType::Nebula),
+        "Debris Field" => Ok(WaypointType::DebrisField),
+        "Gravity Well" => Ok(WaypointType::GravityWell),
+        _ => Err(())
+      }
   }
 }
 

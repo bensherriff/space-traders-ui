@@ -1,4 +1,4 @@
-use std::fmt::{Formatter, Display};
+use std::{fmt::{Formatter, Display}, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use super::{SymbolResponse, waypoint::WaypointType, ship::cooldown::Cooldown};
@@ -64,6 +64,26 @@ impl Display for SystemType {
         SystemType::Unstable => write!(f, "Unstable"),
     }
   }
+}
+
+impl FromStr for SystemType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+          "Neutron Star" => Ok(SystemType::NeutronStar),
+          "Red Star" => Ok(SystemType::NeutronStar),
+          "Orange Star" => Ok(SystemType::NeutronStar),
+          "Blue Star" => Ok(SystemType::NeutronStar),
+          "Young Star" => Ok(SystemType::NeutronStar),
+          "White Dwarf" => Ok(SystemType::NeutronStar),
+          "Black Hole" => Ok(SystemType::NeutronStar),
+          "Hyper Giant" => Ok(SystemType::NeutronStar),
+          "Nebula" => Ok(SystemType::NeutronStar),
+          "Unstable" => Ok(SystemType::NeutronStar),
+          _ => Err(())
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

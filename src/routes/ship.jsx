@@ -21,22 +21,17 @@ export default function Ship() {
 
   function update_ship(ship) {
     setShip(ship);
-    Storage.setShip(ship.symbol, ship);
   }
 
   async function get_ship() {
-    if (Storage.hasShip(shipId)) {
-      setShip(Storage.getShip(shipId));
-    } else {
-      invoke("get_ship", { token: Storage.getToken(), symbol: shipId}).then(response => {
-        if (response && response.data) {
-          update_ship(response.data);
-          setError("");
-        } else if (response && response.error) {
-          setError(response.error);
-        }
-      });
-    }
+    invoke("get_ship", { token: Storage.getToken(), symbol: shipId}).then(response => {
+      if (response && response.data) {
+        setShip(response.data);
+        setError("");
+      } else if (response && response.error) {
+        setError(response.error);
+      }
+    });
   }
 
   async function get_waypoint() {

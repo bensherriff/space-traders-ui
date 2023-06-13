@@ -20,15 +20,22 @@ pub async fn list_systems(token: String, limit: u64, page: u64) -> ResponseObjec
 /// Get the details of a system.
 #[tauri::command]
 pub async fn get_system(pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, system: String) -> Result<ResponseObject<System>, ()> {
-  let url = format!("/systems/{}", system);
-  let result = handle_result(get_request::<System>(token, url, None).await);
-  match &result.data {
-    Some(data) => {
-      insert_system(&pool, data);
+  match crate::data::db::get_system(&pool, &system) {
+    Some(s) => {
+      Ok(ResponseObject { data: Some(s), error: None, meta: None })
+    },
+    None => {
+      let url = format!("/systems/{}", system);
+      let result = handle_result(get_request::<System>(token, url, None).await);
+      match &result.data {
+        Some(data) => {
+          insert_system(&pool, data);
+        }
+        None => {}
+      };
+      Ok(result)
     }
-    None => {}
-  };
-  Ok(result)
+  }
 }
 
 /// Return a list of all waypoints.

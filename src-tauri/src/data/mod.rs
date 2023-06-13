@@ -1,6 +1,6 @@
-use std::{fs::{File, create_dir_all}, path::{Path, PathBuf}, time::Duration};
+use std::{fs::{create_dir_all}, path::{Path, PathBuf}, time::Duration};
 
-use diesel::{prelude::*, r2d2::{Pool, ConnectionManager, CustomizeConnection}, connection::SimpleConnection};
+use diesel::{r2d2::{Pool, ConnectionManager, CustomizeConnection}, connection::SimpleConnection};
 use diesel::sqlite::SqliteConnection;
 
 pub mod db;
@@ -19,15 +19,15 @@ pub fn data_dir() -> PathBuf {
   path
 }
 
-pub fn init() {
-  // create_file();
-}
+// pub fn init() {
+//   // create_file();
+// }
 
-pub fn create_file() {
-  let db_path = get_path_string();
-  let path = Path::new(&db_path);
-  File::create(path).unwrap();
-}
+// pub fn create_file() {
+//   let db_path = get_path_string();
+//   let path = Path::new(&db_path);
+//   File::create(path).unwrap();
+// }
 
 #[derive(Debug)]
 pub struct ConnectionOptions {
@@ -52,8 +52,6 @@ impl CustomizeConnection<SqliteConnection, diesel::r2d2::Error> for ConnectionOp
     })()
     .map_err(diesel::r2d2::Error::QueryError)
   }
-
-  fn on_release(&self, conn: SqliteConnection) {}
 }
 
 pub fn connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {

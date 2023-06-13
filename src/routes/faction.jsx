@@ -14,16 +14,11 @@ export default function Faction() {
   }, []);
   
   async function get_faction() {
-    if (Storage.hasFaction(factionId)) {
-      setFaction(Storage.getFaction(factionId));
-    } else {
-      invoke("get_faction", { token: getToken(), factionSymbol: factionId }).then((response) => {
-        if (response && response.data) {
-          setFaction(response.data);
-          Storage.setFaction(factionId, response.data);
-        }
-      });
-    }
+    invoke("get_faction", { token: getToken(), factionSymbol: factionId }).then((response) => {
+      if (response && response.data) {
+        setFaction(response.data);
+      }
+    });
   }
 
   return (

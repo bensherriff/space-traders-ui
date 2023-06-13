@@ -25,18 +25,6 @@ export default function Login( { setAgent } ) {
     get_my_agent();
   }
 
-  async function load_database_data() {
-    // setLoadDatabaseStatus("Loading Database");
-    // await invoke("database_init", { token: token }).then(response => {
-    //   if (response) {
-    //     setLoadDatabaseStatus("Database Loaded");
-    //     Storage.setSessionStorage('systems_db_loaded', true);
-    //   } else {
-    //     setLoadDatabaseStatus("Load Database Data");
-    //   }
-    // });
-  }
-
   async function get_my_agent() {
     await invoke("get_my_agent", { token: token }).then(response => {
       if (response.data) {
@@ -92,7 +80,6 @@ export default function Login( { setAgent } ) {
           <i className="text-center flex">{status.description}</i>
           <ul>
             <li>Next Reset: {Text.date(status.serverResets.next)}</li>
-            <li><Button disabled={loadDatabaseStatus != 'Load Database Data'} className="w-44" onClick={load_database_data}>{loadDatabaseStatus}</Button></li>
           </ul>
           <div className="mt-4 flex justify-between">
             <div className="mx-4 w-1/4">

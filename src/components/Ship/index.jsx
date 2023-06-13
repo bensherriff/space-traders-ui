@@ -204,7 +204,6 @@ export function Navigation({ship, updateShip}) {
   async function get_waypoint() {
     invoke("get_waypoint", { token: Storage.getToken(), system: ship.nav.systemSymbol, waypoint: ship.nav.waypointSymbol }).then(response => {
       if (response && response.data) {
-        console.log(response);
         setWaypoint(response.data);
       }
     });
