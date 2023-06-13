@@ -9,16 +9,8 @@ use crate::models::system::System;
 
 use super::data_dir;
 
-diesel::table! {
-  systems {
-    id -> Integer,
-    symbol -> Text
-  }
-}
-
 pub fn init() {
   create_file();
-  get_systems_connection();
 }
 
 pub fn create_file() {
@@ -27,7 +19,7 @@ pub fn create_file() {
   File::create(path).unwrap();
 }
 
-pub fn get_systems_connection() -> SqliteConnection {
+pub fn establish_systems_connection() -> SqliteConnection {
   let db_path = &get_path_string();
   SqliteConnection::establish(db_path)
   .unwrap_or_else(|_| panic!("Error connecting to {}", db_path))
