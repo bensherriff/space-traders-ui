@@ -1,7 +1,7 @@
 use diesel::{SqliteConnection, r2d2::{ConnectionManager, Pool}};
 use tauri::State;
 
-use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, data::db::insert_system};
+use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, data::system::insert_system};
 
 use super::requests::{ResponseObject, get_request, handle_result};
 
@@ -20,7 +20,7 @@ pub async fn list_systems(token: String, limit: u64, page: u64) -> ResponseObjec
 /// Get the details of a system.
 #[tauri::command]
 pub async fn get_system(pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, system: String) -> Result<ResponseObject<System>, ()> {
-  match crate::data::db::get_system(&pool, &system) {
+  match crate::data::system::get_system(&pool, &system) {
     Some(s) => {
       Ok(ResponseObject { data: Some(s), error: None, meta: None })
     },

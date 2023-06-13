@@ -2,10 +2,13 @@ use std::{fs::{create_dir_all}, path::{Path, PathBuf}, time::Duration};
 
 use diesel::{r2d2::{Pool, ConnectionManager, CustomizeConnection}, connection::SimpleConnection};
 use diesel::sqlite::SqliteConnection;
+// use diesel_migrations::{EmbeddedMigrations, embed_migrations};
 
-pub mod db;
+pub mod system;
 pub mod models;
 pub mod schema;
+
+// pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
 pub fn dir() -> PathBuf {
   std::env::current_dir().unwrap()
@@ -19,15 +22,10 @@ pub fn data_dir() -> PathBuf {
   path
 }
 
-// pub fn init() {
-//   // create_file();
-// }
-
-// pub fn create_file() {
-//   let db_path = get_path_string();
-//   let path = Path::new(&db_path);
-//   File::create(path).unwrap();
-// }
+pub fn init() {
+  // TODO Use migrations to create database tables if they don't exist
+  // let mut connection = pool.get().unwrap();
+}
 
 #[derive(Debug)]
 pub struct ConnectionOptions {

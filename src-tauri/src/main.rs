@@ -8,7 +8,6 @@ mod data;
 mod models;
 
 fn main() {
-  // let connection = establish_connection();
   let pool = connection_pool();
 
   tauri::Builder::default()
@@ -16,6 +15,7 @@ fn main() {
     .plugin(tauri_plugin_sql::Builder::default().build())
     .manage(pool)
     .setup(|_app| {
+      data::init();
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
