@@ -1,3 +1,4 @@
+use log::warn;
 use reqwest::Client;
 use serde::{de, Deserialize, Serialize};
 use serde_json::Value;
@@ -150,7 +151,7 @@ fn handle_response<T: de::DeserializeOwned>(response: &Value) -> Result<Response
           })
         }
         _ => {
-          println!("Failed to match ResponseObject\n{:#?}", response);
+          warn!("Failed to match ResponseObject\n{:#?}", response);
           Ok(ResponseObject {
             data: None,
             error: Some(ErrorObject {
@@ -163,7 +164,7 @@ fn handle_response<T: de::DeserializeOwned>(response: &Value) -> Result<Response
       }
     }
     Err(_) => {
-      println!("Failed to match deserialized object\n{:#?}", response);
+      warn!("Failed to match deserialized object\n{:#?}", response);
       Ok(ResponseObject {
         data: None,
         error: Some(ErrorObject {

@@ -2,6 +2,7 @@ use std::{fs::{create_dir_all}, path::{Path, PathBuf}, time::Duration};
 
 use diesel::{r2d2::{Pool, ConnectionManager, CustomizeConnection}, connection::SimpleConnection};
 use diesel::sqlite::SqliteConnection;
+use log::warn;
 
 pub mod system;
 pub mod models;
@@ -42,7 +43,7 @@ pub fn init(pool: &Pool<ConnectionManager<SqliteConnection>>) {
           match connection.batch_execute(&contents) {
             Ok(_) => {},
             Err(err) => {
-              println!("{:#?}", err);
+              warn!("{:#?}", err);
             }
           };
         }

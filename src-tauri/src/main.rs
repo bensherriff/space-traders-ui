@@ -1,19 +1,35 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use diesel::{r2d2::{Pool, ConnectionManager}, SqliteConnection};
+use log::{error, info, LevelFilter};
+
 use data::{connection_pool};
+use reqwest::Client;
+use tauri_plugin_log::LogTarget;
 
 mod api;
 mod data;
 mod models;
 
 fn main() {
-  let pool = connection_pool();
+  let pool: Pool<ConnectionManager<SqliteConnection>> = connection_pool();
+  let client: Client = Client::new();
 
-  tauri::Builder::default()
+  match tauri::Builder::default()
+    .plugin(tauri_plugin_log::Builder::default()
+      .targets([
+        LogTarget::Stdout,
+        LogTarget::Webview
+      ])
+      .level_for("tauri", LevelFilter::Info)
+      .level_for("reqwest", LevelFilter::Info)
+      .level(LevelFilter::Debug)
+      .build())
     .plugin(tauri_plugin_store::Builder::default().build())
     .plugin(tauri_plugin_sql::Builder::default().build())
     .manage(pool)
+    .manage(client)
     .setup(|_app| {
       data::init(&connection_pool());
       Ok(())
@@ -62,6 +78,9 @@ fn main() {
       api::systems::get_shipyard,
       api::systems::get_jump_gate
       ])
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .run(tauri::generate_context!()) {
+      Ok(_) => info!("App started"),
+      Err(err) => error!("{}; Failed to start app", err)
+    }
+    info!("here");
 }
