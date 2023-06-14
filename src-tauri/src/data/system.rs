@@ -1,15 +1,12 @@
 use std::str::FromStr;
 
-use crate::data::models::SystemDB;
 use crate::models::SymbolResponse;
 use crate::models::system::{System, SystemWaypoint, SystemType};
-use crate::data::{models::{NewSystemDB, NewSystemWaypointDB}, schema};
+use crate::data::{models::{SystemDB, NewSystemDB, NewSystemWaypointDB, SystemWaypointDB}, schema};
 use crate::models::waypoint::WaypointType;
 
 use diesel::prelude::*;
 use diesel::{RunQueryDsl, QueryDsl, insert_or_ignore_into, SqliteConnection, r2d2::{Pool, ConnectionManager}};
-
-use super::models::SystemWaypointDB;
 
 pub fn get_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbol: &str) -> Option<System> {
   use schema::systems;

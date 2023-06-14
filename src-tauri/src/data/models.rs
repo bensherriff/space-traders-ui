@@ -34,6 +34,7 @@ pub struct SystemWaypointDB {
   pub x: i32,
   pub y: i32
 }
+
 #[derive(Insertable)]
 #[diesel(table_name = crate::data::schema::system_waypoints)]
 pub struct NewSystemWaypointDB<'a> {
@@ -174,4 +175,76 @@ pub struct NewShipDB<'a> {
   pub fuel_capacity: i32,
   pub fuel_consumed_amount: i32,
   pub fuel_consumed_timestamp: &'a str
+}
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::data::schema::fleet_cargo)]
+pub struct CargoDB {
+  pub id: String, /// UUID
+  pub symbol: String,
+  pub name: String,
+  pub description: String,
+  pub units: i32
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::data::schema::fleet_cargo)]
+pub struct NewCargoDB<'a> {
+  pub id: &'a str, /// UUID
+  pub symbol: &'a str,
+  pub name: &'a str,
+  pub description: &'a str,
+  pub units: i32
+}
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::data::schema::fleet_modules)]
+pub struct ModuleDB {
+  pub id: String, /// UUID
+  pub capacity: Option<i32>,
+  pub range: Option<i32>,
+  pub name: String,
+  pub description: String,
+  pub req_power: Option<i32>,
+  pub req_crew: Option<i32>,
+  pub req_slots: Option<i32>
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::data::schema::fleet_modules)]
+pub struct NewModuleDB<'a> {
+  pub id: String, /// UUID
+  pub capacity: Option<i32>,
+  pub range: Option<i32>,
+  pub name: &'a str,
+  pub description: &'a str,
+  pub req_power: Option<i32>,
+  pub req_crew: Option<i32>,
+  pub req_slots: Option<i32>
+}
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::data::schema::fleet_mounts)]
+pub struct MountDB {
+  pub id: String, /// UUID
+  pub deposits: Option<String>,
+  pub strength: Option<i32>,
+  pub name: String,
+  pub description: String,
+  pub req_power: Option<i32>,
+  pub req_crew: Option<i32>,
+  pub req_slots: Option<i32>
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::data::schema::fleet_mounts)]
+pub struct NewMountDB<'a> {
+  pub id: String, /// UUID
+  pub deposits: Option<String>,
+  pub strength: Option<i32>,
+  pub name: &'a str,
+  pub description: &'a str,
+  pub req_power: Option<i32>,
+  pub req_crew: Option<i32>,
+  pub req_slots: Option<i32>
 }
