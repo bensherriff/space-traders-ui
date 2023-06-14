@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use super::requirements::Requirements;
@@ -85,5 +85,30 @@ impl Display for FrameType {
       FrameType::Cruiser => write!(f, "Cruiser"),
       FrameType::Carrier => write!(f, "Carrier"),
     }
+  }
+}
+
+impl FromStr for FrameType {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Probe" => Ok(FrameType::Probe),
+        "Drone" => Ok(FrameType::Drone),
+        "Interceptor" => Ok(FrameType::Interceptor),
+        "Racer" => Ok(FrameType::Racer),
+        "Fighter" => Ok(FrameType::Fighter),
+        "Frigate" => Ok(FrameType::Frigate),
+        "Shuttle" => Ok(FrameType::Shuttle),
+        "Explorer" => Ok(FrameType::Explorer),
+        "Miner" => Ok(FrameType::Miner),
+        "Light Freighter" => Ok(FrameType::LightFreighter),
+        "Heavy Freighter" => Ok(FrameType::HeavyFreighter),
+        "Transport" => Ok(FrameType::Transport),
+        "Destroyer" => Ok(FrameType::Destroyer),
+        "Cruiser" => Ok(FrameType::Cruiser),
+        "Carrier" => Ok(FrameType::Carrier),
+        _ => Err(())
+      }
   }
 }

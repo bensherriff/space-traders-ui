@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,5 +25,17 @@ impl Display for Rotation {
       Rotation::Strict => write!(f, "Strict"),
       Rotation::Relaxed => write!(f, "Relaxed"),
     }
+  }
+}
+
+impl FromStr for Rotation {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Strict" => Ok(Rotation::Strict),
+        "Relaxed" => Ok(Rotation::Relaxed),
+        _ => Err(())
+      }
   }
 }

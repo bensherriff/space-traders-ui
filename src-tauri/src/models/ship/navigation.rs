@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use crate::models::waypoint::{WaypointType};
@@ -58,6 +58,19 @@ impl Display for NavStatus {
   }
 }
 
+impl FromStr for NavStatus {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "In Transit" => Ok(NavStatus::InTransit),
+        "In Orbit" => Ok(NavStatus::InOrbit),
+        "Docked" => Ok(NavStatus::Docked),
+        _ => Err(())
+      }
+  }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FlightMode {
   #[serde(rename = "DRIFT")]
@@ -78,6 +91,20 @@ impl Display for FlightMode {
       FlightMode::Cruise => write!(f, "Cruise"),
       FlightMode::Burn => write!(f, "Burn"),
     }
+  }
+}
+
+impl FromStr for FlightMode {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Drift" => Ok(FlightMode::Drift),
+        "Stealth" => Ok(FlightMode::Stealth),
+        "Cruise" => Ok(FlightMode::Cruise),
+        "Burn" => Ok(FlightMode::Burn),
+        _ => Err(())
+      }
   }
 }
 

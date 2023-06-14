@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use super::requirements::Requirements;
@@ -47,5 +47,20 @@ impl Display for ReactorType {
       ReactorType::ChemicalI => write!(f, "Chemical Reactor I"),
       ReactorType::AntimatterI => write!(f, "Antimatter Reactor I"),
     }
+  }
+}
+
+impl FromStr for ReactorType {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Solar Reactor I" => Ok(ReactorType::SolarI),
+        "Fusion Reactor I" => Ok(ReactorType::FusionI),
+        "Fission Reactor I" => Ok(ReactorType::FissionI),
+        "Chemical Reactor I" => Ok(ReactorType::ChemicalI),
+        "Antimatter Reactor I" => Ok(ReactorType::AntimatterI),
+        _ => Err(())
+      }
   }
 }

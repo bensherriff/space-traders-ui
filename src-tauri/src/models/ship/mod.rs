@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 
 use serde::{Serialize, Deserialize};
 
@@ -72,6 +72,26 @@ impl Display for ShipType {
       ShipType::OreHound => write!(f, "Ore Hound"),
       ShipType::RefiningFreighter => write!(f, "Refining Freighter"),
     }
+  }
+}
+
+impl FromStr for ShipType {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Probe" => Ok(ShipType::Probe),
+        "Mining Drone" => Ok(ShipType::MiningDrone),
+        "Interceptor" => Ok(ShipType::Interceptor),
+        "Light Hauler" => Ok(ShipType::LightHauler),
+        "Command Frigate" => Ok(ShipType::CommandFrigate),
+        "Explorer" => Ok(ShipType::Explorer),
+        "Heavy Freighter" => Ok(ShipType::HeavyFreighter),
+        "Light Shuttle" => Ok(ShipType::LightShuttle),
+        "Ore Hound" => Ok(ShipType::OreHound),
+        "Refining Freighter" => Ok(ShipType::RefiningFreighter),
+        _ => Err(())
+      }
   }
 }
 

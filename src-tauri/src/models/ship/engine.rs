@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use super::requirements::Requirements;
@@ -42,5 +42,19 @@ impl Display for EngineType {
       EngineType::IonDriveII => write!(f, "Ion Drive II"),
       EngineType::HyperDriveI => write!(f, "Hyper Drive I"),
     }
+  }
+}
+
+impl FromStr for EngineType {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Impulse Drive I" => Ok(EngineType::ImpulseDriveI),
+        "Ion Drive I" => Ok(EngineType::IonDriveI),
+        "Ion Drive II" => Ok(EngineType::IonDriveII),
+        "Hyper Drive I" => Ok(EngineType::HyperDriveI),
+        _ => Err(())
+      }
   }
 }

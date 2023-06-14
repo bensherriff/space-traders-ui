@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,6 +58,30 @@ impl Display for Role {
             Role::Satellite => write!(f, "Satellite"),
             Role::Explorer => write!(f, "Explorer"),
             Role::Refinery => write!(f, "Refinery"),
+        }
+    }
+}
+
+impl FromStr for Role {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+          "Fabricator" => Ok(Role::Fabricator),
+          "Harvester" => Ok(Role::Harvester),
+          "Hauler" => Ok(Role::Hauler),
+          "Interceptor" => Ok(Role::Interceptor),
+          "Excavator" => Ok(Role::Excavator),
+          "Transport" => Ok(Role::Transport),
+          "Repair" => Ok(Role::Repair),
+          "Surveyor" => Ok(Role::Surveyor),
+          "Command" => Ok(Role::Command),
+          "Carrier" => Ok(Role::Carrier),
+          "Patrol" => Ok(Role::Patrol),
+          "Satellite" => Ok(Role::Satellite),
+          "Explorer" => Ok(Role::Explorer),
+          "Refinery" => Ok(Role::Refinery),
+          _ => Err(())
         }
     }
 }
