@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Storage, Text } from '../js';
 import { SystemMap } from '../components/Canvas';
 import { NavLink } from "react-router-dom";
+import LocationHeader from '../components/Location/LocationHeader';
 
 export default function System() {
   const {systemId} = useParams();
@@ -27,7 +28,7 @@ export default function System() {
     <div>
       {system && system.type? (
         <div>
-          <h1 className='text-center text-4xl'>{system.symbol} ({Text.capitalize(system.type)})</h1>
+          <LocationHeader symbol={system.symbol} type={system.type}/>
           <hr className='mb-5'/>
           <ul>
             <li>Sector: {system.sectorSymbol}</li>

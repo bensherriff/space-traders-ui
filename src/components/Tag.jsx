@@ -1,6 +1,6 @@
-export default function Tag({ text, className="" }) {
+export default function Tag({ text, className="", bgColor="bg-green-700", textColor="text-white" }) {
   return (
-    <span className={`${className} m-1 px-4 py-2 bg-green-700 border-green-700 border-2 rounded-full select-none align-middle cursor-default shadow-md font-bold`}>
+    <span className={`${className} m-1 px-2 py-2 ${bgColor} ${textColor} rounded-md select-none align-middle cursor-default shadow-md font-bold`}>
       {text}
     </span>
   )

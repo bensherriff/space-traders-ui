@@ -2,8 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Modeseven";
+  src: url("../public/fonts/Modeseven.ttf");
+}
+
 :root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  /* font-family: Inter, Avenir, Helvetica, Arial, sans-serif; */
+  font-family: modeseven, sans-serif;
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;

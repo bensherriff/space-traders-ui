@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Text } from "../../js";
+import { Text } from "../js";
 
 const SCALE = 10;
 const MAX_ZOOM = 2;

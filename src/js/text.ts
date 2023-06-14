@@ -12,7 +12,8 @@ export function capitalize(text: string): string {
 
 export function currency(credits: number): string {
   let formatter = new Intl.NumberFormat();
-  return `${formatter.format(credits)} ${'\u2124'}`
+  // return `${formatter.format(credits)} ${'\u2124'}`
+  return `${formatter.format(credits)}`
 }
 
 export function date(text: string): string {

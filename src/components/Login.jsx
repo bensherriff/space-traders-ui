@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import PropTypes from 'prop-types';
-import { Storage, Text } from "../../js";
+import { Storage, Text } from "../js";
 import { useNavigate } from "react-router-dom";
-import { Button } from "..";
+import { Button } from ".";
 
 export default function Login( { setAgent } ) {
   const [token, setToken] = useState("");
