@@ -25,14 +25,15 @@ fn main() {
       .level_for("tauri", LevelFilter::Info)
       .level_for("reqwest", LevelFilter::Info)
       .level_for("diesel", LevelFilter::Info)
+      .level_for("tao", LevelFilter::Info)
       .level(LevelFilter::Debug)
       .build())
     .plugin(tauri_plugin_store::Builder::default().build())
     .plugin(tauri_plugin_sql::Builder::default().build())
     .manage(pool)
     .manage(client)
-    .setup(|_app| {
-      data::init(&connection_pool());
+    .setup(|app| {
+      data::init(&connection_pool(), app);
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![

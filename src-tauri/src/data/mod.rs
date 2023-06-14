@@ -3,6 +3,7 @@ use std::{fs::{create_dir_all}, path::{Path, PathBuf}, time::Duration};
 use diesel::{r2d2::{Pool, ConnectionManager, CustomizeConnection}, connection::SimpleConnection};
 use diesel::sqlite::SqliteConnection;
 use log::warn;
+use tauri::App;
 
 pub mod system;
 pub mod models;
@@ -11,7 +12,6 @@ pub mod schema;
 const DB_FILE: &str = "stu.db";
 const UP_SQL_FILE: &str = "up.sql";
 const DATA_DIR: &str = "data";
-const MIGRATIONS_DIR: &str = "migrations";
 
 pub fn dir() -> PathBuf {
   std::env::current_dir().unwrap()
@@ -28,13 +28,9 @@ pub fn data_dir() -> PathBuf {
   path
 }
 
-pub fn migrations_dir() -> PathBuf {
-  Path::new(&dir()).join(MIGRATIONS_DIR)
-}
-
-pub fn init(pool: &Pool<ConnectionManager<SqliteConnection>>) {
+pub fn init(pool: &Pool<ConnectionManager<SqliteConnection>>, app: &mut App) {
   let mut connection = pool.get().unwrap();
-  let migrations_dir = migrations_dir();
+  let migrations_dir = app.path_resolver().resolve_resource("migrations").expect("Unable to find migrations");
   let migrations = std::fs::read_dir(migrations_dir).unwrap();
   for migration in migrations {
     if migration.as_ref().unwrap().file_type().unwrap().is_dir() {

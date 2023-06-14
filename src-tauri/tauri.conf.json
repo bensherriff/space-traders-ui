@@ -34,7 +34,7 @@
       ],
       "externalBin": [],
       "resources": [
-        "src-tauri/migrations"
+        "migrations"
       ]
     },
     "security": {
