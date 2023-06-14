@@ -21,7 +21,6 @@ export default function Login( { setAgent } ) {
   }, [])
 
   async function connect() {
-    Storage.setSessionStorage('systems_db_loaded', false);
     get_my_agent();
   }
 

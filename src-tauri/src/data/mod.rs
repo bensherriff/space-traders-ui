@@ -2,29 +2,53 @@ use std::{fs::{create_dir_all}, path::{Path, PathBuf}, time::Duration};
 
 use diesel::{r2d2::{Pool, ConnectionManager, CustomizeConnection}, connection::SimpleConnection};
 use diesel::sqlite::SqliteConnection;
-// use diesel_migrations::{EmbeddedMigrations, embed_migrations};
 
 pub mod system;
 pub mod models;
 pub mod schema;
 
-// pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
+const DB_FILE: &str = "stu.db";
+const UP_SQL_FILE: &str = "up.sql";
+const DATA_DIR: &str = "data";
+const MIGRATIONS_DIR: &str = "migrations";
 
 pub fn dir() -> PathBuf {
   std::env::current_dir().unwrap()
 }
 
 pub fn data_dir() -> PathBuf {
-  let path = Path::new(&dir()).join("data");
+  let path = Path::new(&dir()).join(DATA_DIR);
   if !path.exists() {
     create_dir_all(&path).unwrap();
   }
   path
 }
 
-pub fn init() {
-  // TODO Use migrations to create database tables if they don't exist
-  // let mut connection = pool.get().unwrap();
+pub fn migrations_dir() -> PathBuf {
+  Path::new(&dir()).join(MIGRATIONS_DIR)
+}
+
+pub fn init(pool: &Pool<ConnectionManager<SqliteConnection>>) {
+  let mut connection = pool.get().unwrap();
+  let migrations_dir = migrations_dir();
+  let migrations = std::fs::read_dir(migrations_dir).unwrap();
+  for migration in migrations {
+    if migration.as_ref().unwrap().file_type().unwrap().is_dir() {
+      let migration_paths = std::fs::read_dir(&migration.unwrap().path()).unwrap();
+      for migration_path in migration_paths {
+        if migration_path.as_ref().unwrap().file_name().eq_ignore_ascii_case(UP_SQL_FILE) {
+          let path = &migration_path.unwrap().path();
+          let contents = std::fs::read_to_string(path).expect("Unable to read from file");
+          match connection.batch_execute(&contents) {
+            Ok(_) => {},
+            Err(err) => {
+              println!("{:#?}", err);
+            }
+          };
+        }
+      }
+    }
+  }
 }
 
 #[derive(Debug)]
@@ -66,7 +90,7 @@ pub fn connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
 }
 
 pub fn get_path() -> PathBuf {
-  Path::new(&data_dir()).join("sqlite.db")
+  Path::new(&data_dir()).join(DB_FILE)
 }
 
 pub fn get_path_string() -> String {

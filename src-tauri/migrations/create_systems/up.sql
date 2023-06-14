@@ -1,5 +1,5 @@
 -- Your SQL goes here
-CREATE TABLE systems (
+CREATE TABLE IF NOT EXISTS systems (
     system_symbol TEXT PRIMARY KEY NOT NULL,
     sector_symbol TEXT NOT NULL,
     system_type TEXT NOT NULL,

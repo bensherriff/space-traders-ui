@@ -35,3 +35,5 @@ diesel migration run
 ```
 
 Handy: `diesel migration redo` and `diesel database reset`
+
+Build with `npm run tauri build`

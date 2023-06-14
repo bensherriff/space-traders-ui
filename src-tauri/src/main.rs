@@ -15,7 +15,7 @@ fn main() {
     .plugin(tauri_plugin_sql::Builder::default().build())
     .manage(pool)
     .setup(|_app| {
-      data::init();
+      data::init(&connection_pool());
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
