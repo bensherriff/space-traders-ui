@@ -16,6 +16,9 @@
       "shell": {
         "all": false,
         "open": true
+      },
+      "fs": {
+        "scope": ["$RESOURCE/*"]
       }
     },
     "bundle": {
@@ -29,7 +32,10 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "externalBin": []
+      "externalBin": [],
+      "resources": [
+        "src-tauri/migrations"
+      ]
     },
     "security": {
       "csp": null

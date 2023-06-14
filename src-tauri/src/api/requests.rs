@@ -32,10 +32,9 @@ pub enum ResponseObjectEvent<T> {
   None
 }
 
-pub async fn get_request<T: de::DeserializeOwned>(token: String, url: String, query: Option<Vec<(&str, String)>>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
+pub async fn get_request<T: de::DeserializeOwned>(client: &Client, token: String, url: String, query: Option<Vec<(&str, String)>>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
   let response: Value;
   let base_url: String = "https://api.spacetraders.io/v2".to_string();
-  let client: Client = Client::new();
   let uri: String = format!("{}{}", base_url, url);
 
   match query {
@@ -67,10 +66,9 @@ pub async fn get_request<T: de::DeserializeOwned>(token: String, url: String, qu
   handle_response(&response)
 }
 
-pub async fn post_request<T: de::DeserializeOwned>(token: String, url: String, body: Option<String>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
+pub async fn post_request<T: de::DeserializeOwned>(client: &Client, token: String, url: String, body: Option<String>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
   let response: Value;
   let base_url: String = "https://api.spacetraders.io/v2".to_string();
-  let client: Client = Client::new();
   let uri: String = format!("{}{}", base_url, url);
 
   match body {
@@ -98,10 +96,9 @@ pub async fn post_request<T: de::DeserializeOwned>(token: String, url: String, b
   handle_response(&response)
 }
 
-pub async fn patch_request<T: de::DeserializeOwned>(token: String, url: String, body: Option<String>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
+pub async fn patch_request<T: de::DeserializeOwned>(client: &Client, token: String, url: String, body: Option<String>) -> Result<ResponseObject<T>, Box<dyn std::error::Error>> {
   let response: Value;
   let base_url: String = "https://api.spacetraders.io/v2".to_string();
-  let client: Client = Client::new();
   let uri: String = format!("{}{}", base_url, url);
 
   match body {

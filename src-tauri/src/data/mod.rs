@@ -20,7 +20,10 @@ pub fn dir() -> PathBuf {
 pub fn data_dir() -> PathBuf {
   let path = Path::new(&dir()).join(DATA_DIR);
   if !path.exists() {
-    create_dir_all(&path).unwrap();
+    match create_dir_all(&path) {
+      Ok(_) => {},
+      Err(err) => warn!("{}", err)
+    }
   }
   path
 }

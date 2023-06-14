@@ -1,7 +1,7 @@
 # Space Traders UI
 
 
-## Getting Started
+## Development
 Prerequisites
 - [Rust](https://www.rust-lang.org/)
   - Cargo
@@ -9,15 +9,14 @@ Prerequisites
 - [Tauri](https://tauri.app)
 - [npm](https://github.com/nvm-sh/nvm)
 
-
+The application can be started for development using the following:
 ```curl
 npm install
 npm run tauri dev
 ```
 
-### Setup Database
+### Database Setup
 Requires [diesel_cli](https://crates.io/crates/diesel_cli)
-
 
 `cargo install diesel_cli --no-default-features --features "sqlite-bundled"` or `cargo install diesel_cli --no-default-features --features "sqlite"`
 
@@ -36,4 +35,5 @@ diesel migration run
 
 Handy: `diesel migration redo` and `diesel database reset`
 
-Build with `npm run tauri build`
+### Building
+`npm run tauri build` or `npm run tauri build -- --debug`

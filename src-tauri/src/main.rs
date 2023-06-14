@@ -24,6 +24,7 @@ fn main() {
       ])
       .level_for("tauri", LevelFilter::Info)
       .level_for("reqwest", LevelFilter::Info)
+      .level_for("diesel", LevelFilter::Info)
       .level(LevelFilter::Debug)
       .build())
     .plugin(tauri_plugin_store::Builder::default().build())
@@ -82,5 +83,4 @@ fn main() {
       Ok(_) => info!("App started"),
       Err(err) => error!("{}; Failed to start app", err)
     }
-    info!("here");
 }
