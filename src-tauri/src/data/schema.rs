@@ -26,7 +26,7 @@ diesel::table! {
     crew_required -> Integer,
     crew_capacity -> Integer,
     crew_rotation -> Text,
-    crew_moral -> Integer,
+    crew_moral -> Float,
     crew_wages -> Integer,
     frame_symbol -> Text,
     frame_name -> Text,
@@ -41,7 +41,7 @@ diesel::table! {
     reactor_symbol -> Text,
     reactor_name -> Text,
     reactor_desc -> Text,
-    reactor_condition -> Integer,
+    reactor_condition -> Float,
     reactor_power_output -> Integer,
     reactor_req_power -> Nullable<Integer>,
     reactor_req_crew -> Nullable<Integer>,
@@ -49,14 +49,11 @@ diesel::table! {
     engine_symbol -> Text,
     engine_name -> Text,
     engine_desc -> Text,
-    engine_condition -> Integer,
+    engine_condition -> Float,
     engine_speed -> Integer,
     engine_req_power -> Nullable<Integer>,
     engine_req_crew -> Nullable<Integer>,
     engine_req_slots -> Nullable<Integer>,
-    modules -> Text,
-    mounts -> Text,
-    cargo_id -> Text,
     cargo_capacity -> Integer,
     cargo_units -> Integer,
     fuel_current -> Integer,
@@ -68,17 +65,20 @@ diesel::table! {
 
 diesel::table! {
   fleet_cargo (id) {
-    id -> Text,
+    id -> Integer,
+    ship_symbol -> Text,
     symbol -> Text,
     name -> Text,
     description -> Text,
-    units -> Integer
+    units -> Integer,
   }
 }
 
 diesel::table! {
   fleet_modules (id) {
-    id -> Text,
+    id -> Integer,
+    ship_symbol -> Text,
+    symbol -> Text,
     capacity -> Nullable<Integer>,
     range -> Nullable<Integer>,
     name -> Text,
@@ -91,7 +91,9 @@ diesel::table! {
 
 diesel::table! {
   fleet_mounts (id) {
-    id -> Text,
+    id -> Integer,
+    ship_symbol -> Text,
+    symbol -> Text,
     deposits -> Nullable<Text>,
     strength -> Nullable<Integer>,
     name -> Text,
@@ -103,12 +105,18 @@ diesel::table! {
 }
 
 diesel::table! {
-  system_waypoints (waypoint_symbol) {
+  waypoints (waypoint_symbol) {
     waypoint_symbol -> Text,
     system_symbol -> Text,
     waypoint_type -> Text,
     x -> Integer,
     y -> Integer,
+    orbitals -> Text,
+    faction -> Nullable<Text>,
+    traits -> Text,
+    chart_waypoint -> Nullable<Text>,
+    chart_submitted_by -> Nullable<Text>,
+    chart_submitted_on -> Nullable<Text>,
   }
 }
 
@@ -119,7 +127,6 @@ diesel::table! {
     system_type -> Text,
     x -> Integer,
     y -> Integer,
-    waypoints -> Text,
     factions -> Text,
   }
 }
@@ -129,6 +136,6 @@ diesel::allow_tables_to_appear_in_same_query!(
   fleet_modules,
   fleet_mounts,
   fleet_cargo,
-  system_waypoints,
   systems,
+  waypoints,
 );

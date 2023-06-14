@@ -8,13 +8,13 @@ pub struct Frame {
   pub symbol: FrameType,
   pub name: String,
   pub description: String,
-  pub condition: f64,
+  pub condition: f32,
   #[serde(rename = "moduleSlots")]
-  pub module_slots: u64,
+  pub module_slots: i32,
   #[serde(rename = "mountingPoints")]
-  pub mounting_points: u64,
+  pub mounting_points: i32,
   #[serde(rename = "fuelCapacity")]
-  pub fuel_capacity: u64,
+  pub fuel_capacity: i32,
   pub requirements: Requirements
 }
 
@@ -24,11 +24,11 @@ pub struct ShipyardFrame {
   pub name: String,
   pub description: String,
   #[serde(rename = "moduleSlots")]
-  pub module_slots: u64,
+  pub module_slots: i32,
   #[serde(rename = "mountingPoints")]
-  pub mounting_points: u64,
+  pub mounting_points: i32,
   #[serde(rename = "fuelCapacity")]
-  pub fuel_capacity: u64,
+  pub fuel_capacity: i32,
   pub requirements: Requirements
 }
 

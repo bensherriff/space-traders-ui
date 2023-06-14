@@ -4,8 +4,8 @@ use super::cooldown::Cooldown;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Cargo {
-  pub capacity: u64,
-  pub units: u64,
+  pub capacity: i32,
+  pub units: i32,
   pub inventory: Vec<CargoItem>
 }
 
@@ -14,7 +14,7 @@ pub struct CargoItem {
   pub symbol: String,
   pub name: String,
   pub description: String,
-  pub units: u64
+  pub units: i32
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

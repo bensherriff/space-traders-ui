@@ -8,8 +8,8 @@ pub struct Engine {
   pub symbol: EngineType,
   pub name: String,
   pub description: String,
-  pub condition: u64,
-  pub speed: u64,
+  pub condition: f32,
+  pub speed: i32,
   pub requirements: Requirements
 }
 
@@ -18,7 +18,7 @@ pub struct ShipyardEngine {
   pub symbol: EngineType,
   pub name: String,
   pub description: String,
-  pub speed: u64,
+  pub speed: i32,
   pub requirements: Requirements
 }
 

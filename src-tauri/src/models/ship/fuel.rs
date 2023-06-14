@@ -4,14 +4,14 @@ use crate::models::{agent::Agent, transaction::Transaction};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Fuel {
-  pub current: u64,
-  pub capacity: u64,
+  pub current: i32,
+  pub capacity: i32,
   pub consumed: Consumed
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Consumed {
-  pub amount: u64,
+  pub amount: i32,
   pub timestamp: String
 }
 

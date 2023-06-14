@@ -3,12 +3,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Crew {
-  pub current: u64,
-  pub required: u64,
-  pub capacity: u64,
+  pub current: i32,
+  pub required: i32,
+  pub capacity: i32,
   pub rotation: Rotation,
-  pub morale: f64,
-  pub wages: u64
+  pub morale: f32,
+  pub wages: i32
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

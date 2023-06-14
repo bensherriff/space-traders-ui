@@ -9,7 +9,6 @@ pub struct SystemDB {
   pub system_type: String,
   pub x: i32,
   pub y: i32,
-  pub waypoints: String,
   pub factions: String
 }
 
@@ -21,28 +20,39 @@ pub struct NewSystemDB<'a> {
   pub system_type: &'a str,
   pub x: i32,
   pub y: i32,
-  pub waypoints: &'a str,
   pub factions: &'a str
 }
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = crate::data::schema::system_waypoints)]
-pub struct SystemWaypointDB {
+#[diesel(table_name = crate::data::schema::waypoints)]
+pub struct WaypointDB {
   pub waypoint_symbol: String,
   pub system_symbol: String,
   pub waypoint_type: String,
   pub x: i32,
-  pub y: i32
+  pub y: i32,
+  pub orbitals: String,
+  pub faction: Option<String>,
+  pub traits: String,
+  pub chart_waypoint: Option<String>,
+  pub chart_submitted_by: Option<String>,
+  pub chart_submitted_on: Option<String>
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = crate::data::schema::system_waypoints)]
-pub struct NewSystemWaypointDB<'a> {
+#[diesel(table_name = crate::data::schema::waypoints)]
+pub struct NewWaypointDB<'a> {
   pub waypoint_symbol: &'a str,
   pub system_symbol: &'a str,
   pub waypoint_type: &'a str,
   pub x: i32,
-  pub y: i32
+  pub y: i32,
+  pub orbitals: &'a str,
+  pub faction: Option<&'a str>,
+  pub traits: &'a str,
+  pub chart_waypoint: Option<&'a str>,
+  pub chart_submitted_by: Option<&'a str>,
+  pub chart_submitted_on: Option<&'a str>
 }
 
 #[derive(Queryable, Selectable)]
@@ -72,7 +82,7 @@ pub struct ShipDB {
   pub crew_required: i32,
   pub crew_capacity: i32,
   pub crew_rotation: String,
-  pub crew_moral: i32,
+  pub crew_moral: f32,
   pub crew_wages: i32,
   pub frame_symbol: String,
   pub frame_name: String,
@@ -87,7 +97,7 @@ pub struct ShipDB {
   pub reactor_symbol: String,
   pub reactor_name: String,
   pub reactor_desc: String,
-  pub reactor_condition: i32,
+  pub reactor_condition: f32,
   pub reactor_power_output: i32,
   pub reactor_req_power: Option<i32>,
   pub reactor_req_crew: Option<i32>,
@@ -95,14 +105,11 @@ pub struct ShipDB {
   pub engine_symbol: String,
   pub engine_name: String,
   pub engine_desc: String,
-  pub engine_condition: i32,
+  pub engine_condition: f32,
   pub engine_speed: i32,
   pub engine_req_power: Option<i32>,
   pub engine_req_crew: Option<i32>,
   pub engine_req_slots: Option<i32>,
-  pub modules: String, /// List of UUIDS
-  pub mounts: String, /// List of UUIDs
-  pub cargo_id: String,
   pub cargo_capacity: i32,
   pub cargo_units: i32,
   pub fuel_current: i32,
@@ -138,7 +145,7 @@ pub struct NewShipDB<'a> {
   pub crew_required: i32,
   pub crew_capacity: i32,
   pub crew_rotation: &'a str,
-  pub crew_moral: i32,
+  pub crew_moral: f32,
   pub crew_wages: i32,
   pub frame_symbol: &'a str,
   pub frame_name: &'a str,
@@ -153,7 +160,7 @@ pub struct NewShipDB<'a> {
   pub reactor_symbol: &'a str,
   pub reactor_name: &'a str,
   pub reactor_desc: &'a str,
-  pub reactor_condition: i32,
+  pub reactor_condition: f32,
   pub reactor_power_output: i32,
   pub reactor_req_power: Option<i32>,
   pub reactor_req_crew: Option<i32>,
@@ -161,14 +168,11 @@ pub struct NewShipDB<'a> {
   pub engine_symbol: &'a str,
   pub engine_name: &'a str,
   pub engine_desc: &'a str,
-  pub engine_condition: i32,
+  pub engine_condition: f32,
   pub engine_speed: i32,
   pub engine_req_power: Option<i32>,
   pub engine_req_crew: Option<i32>,
   pub engine_req_slots: Option<i32>,
-  pub modules: &'a str, /// List of UUIDS
-  pub mounts: &'a str, /// List of UUIDS
-  pub cargo_id: &'a str,
   pub cargo_capacity: i32,
   pub cargo_units: i32,
   pub fuel_current: i32,
@@ -180,7 +184,8 @@ pub struct NewShipDB<'a> {
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = crate::data::schema::fleet_cargo)]
 pub struct CargoDB {
-  pub id: String, /// UUID
+  pub id: i32,
+  pub ship_symbol: String,
   pub symbol: String,
   pub name: String,
   pub description: String,
@@ -190,7 +195,7 @@ pub struct CargoDB {
 #[derive(Insertable)]
 #[diesel(table_name = crate::data::schema::fleet_cargo)]
 pub struct NewCargoDB<'a> {
-  pub id: &'a str, /// UUID
+  pub ship_symbol: &'a str,
   pub symbol: &'a str,
   pub name: &'a str,
   pub description: &'a str,
@@ -200,7 +205,9 @@ pub struct NewCargoDB<'a> {
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = crate::data::schema::fleet_modules)]
 pub struct ModuleDB {
-  pub id: String, /// UUID
+  pub id: i32,
+  pub ship_symbol: String,
+  pub symbol: String,
   pub capacity: Option<i32>,
   pub range: Option<i32>,
   pub name: String,
@@ -213,7 +220,8 @@ pub struct ModuleDB {
 #[derive(Insertable)]
 #[diesel(table_name = crate::data::schema::fleet_modules)]
 pub struct NewModuleDB<'a> {
-  pub id: String, /// UUID
+  pub ship_symbol: &'a str,
+  pub symbol: &'a str,
   pub capacity: Option<i32>,
   pub range: Option<i32>,
   pub name: &'a str,
@@ -226,7 +234,9 @@ pub struct NewModuleDB<'a> {
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = crate::data::schema::fleet_mounts)]
 pub struct MountDB {
-  pub id: String, /// UUID
+  pub id: i32,
+  pub ship_symbol: String,
+  pub symbol: String,
   pub deposits: Option<String>,
   pub strength: Option<i32>,
   pub name: String,
@@ -239,8 +249,9 @@ pub struct MountDB {
 #[derive(Insertable)]
 #[diesel(table_name = crate::data::schema::fleet_mounts)]
 pub struct NewMountDB<'a> {
-  pub id: String, /// UUID
-  pub deposits: Option<String>,
+  pub ship_symbol: &'a str,
+  pub symbol: &'a str,
+  pub deposits: Option<&'a str>,
   pub strength: Option<i32>,
   pub name: &'a str,
   pub description: &'a str,

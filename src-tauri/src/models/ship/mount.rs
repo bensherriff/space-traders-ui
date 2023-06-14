@@ -8,7 +8,7 @@ pub struct Mount {
   pub symbol: MountType,
   pub name: String,
   pub description: String,
-  pub strength: Option<u64>,
+  pub strength: Option<i32>,
   pub deposits: Option<Vec<DepositType>>,
   pub requirements: Requirements
 }

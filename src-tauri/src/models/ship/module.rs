@@ -6,8 +6,8 @@ use super::requirements::Requirements;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Module {
     pub symbol: ModuleType,
-    pub capacity: Option<u64>,
-    pub range: Option<u64>,
+    pub capacity: Option<i32>,
+    pub range: Option<i32>,
     pub name: String,
     pub description: String,
     pub requirements: Requirements

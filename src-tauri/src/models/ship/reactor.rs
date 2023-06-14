@@ -8,9 +8,9 @@ pub struct Reactor {
   pub symbol: String,
   pub name: String,
   pub description: String,
-  pub condition: u64,
+  pub condition: f32,
   #[serde(rename = "powerOutput")]
-  pub power_output: u64,
+  pub power_output: i32,
   pub requirements: Requirements
 }
 
@@ -20,7 +20,7 @@ pub struct ShipyardReactor {
   pub name: String,
   pub description: String,
   #[serde(rename = "powerOutput")]
-  pub power_output: u64,
+  pub power_output: i32,
   pub requirements: Requirements
 }
 

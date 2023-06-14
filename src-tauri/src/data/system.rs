@@ -1,8 +1,9 @@
 use std::str::FromStr;
 
+use crate::data::models::{WaypointDB, NewWaypointDB};
 use crate::models::SymbolResponse;
 use crate::models::system::{System, SystemWaypoint, SystemType};
-use crate::data::{models::{SystemDB, NewSystemDB, NewSystemWaypointDB, SystemWaypointDB}, schema};
+use crate::data::{models::{SystemDB, NewSystemDB}, schema};
 use crate::models::waypoint::WaypointType;
 
 use diesel::prelude::*;
@@ -18,17 +19,6 @@ pub fn get_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbo
     .first(&mut connection);
   match result {
       Ok(r) => {
-        let mut system_waypoints: Vec<SystemWaypoint> = vec![];
-        let waypoints = r.waypoints.split(",");
-        for waypoint_symbol in waypoints {
-          match get_system_waypoint(pool, system_symbol, waypoint_symbol) {
-            Some(w) => {
-              system_waypoints.push(w);
-            },
-            None => {}
-          };
-        }
-
         let mut system_factions: Vec<SymbolResponse> = vec![];
         let factions = r.factions.split(",");
         for faction_symbol in factions {
@@ -41,7 +31,7 @@ pub fn get_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbo
           system_type: SystemType::from_str(&r.system_type).unwrap(),
           x: r.x,
           y: r.y,
-          waypoints: system_waypoints,
+          waypoints: get_system_waypoints(pool, system_symbol),
           factions: system_factions
         }) 
       }
@@ -52,15 +42,10 @@ pub fn get_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbo
 pub fn insert_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system: &System) {
   use schema::systems;
 
-  let mut connection = pool.get().unwrap();
+  let mut connection: diesel::r2d2::PooledConnection<ConnectionManager<SqliteConnection>> = pool.get().unwrap();
   let mut _waypoints = "".to_string();
-  for (index, waypoint) in system.waypoints.iter().enumerate() {
-    insert_system_waypoint(pool, system.symbol.to_string(), waypoint);
-    if index < system.waypoints.len() - 1 {
-      _waypoints = format!("{}{},", _waypoints, waypoint.symbol);
-    } else {
-      _waypoints = format!("{}{}", _waypoints, waypoint.symbol);
-    }
+  for (_index, waypoint) in system.waypoints.iter().enumerate() {
+    insert_system_waypoint(pool, &system.symbol, waypoint);
   }
   let mut _factions = "".to_string();
   for (index, faction) in system.factions.iter().enumerate() {
@@ -77,7 +62,6 @@ pub fn insert_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system: &
     system_type: &system.system_type.to_string(),
     x: system.x,
     y: system.y,
-    waypoints: &_waypoints,
     factions: &_factions
   };
   insert_or_ignore_into(systems::table)
@@ -86,13 +70,38 @@ pub fn insert_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system: &
     .expect("Error saving new system");
 }
 
-pub fn get_system_waypoint(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbol: &str, waypoint_symbol: &str) -> Option<SystemWaypoint> {
-  use schema::system_waypoints;
+pub fn get_system_waypoints(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbol: &str) -> Vec<SystemWaypoint> {
+  use schema::waypoints;
 
   let mut connection = pool.get().unwrap();
-  let result: Result<SystemWaypointDB, diesel::result::Error> = system_waypoints::table
-    .filter(system_waypoints::system_symbol.eq(system_symbol).and(system_waypoints::waypoint_symbol.eq(waypoint_symbol)))
-    .select(SystemWaypointDB::as_select())
+  let result: Result<Vec<WaypointDB>, diesel::result::Error> = waypoints::table
+    .filter(waypoints::system_symbol.eq(system_symbol))
+    .select(WaypointDB::as_select())
+    .load(&mut connection);
+  match result {
+    Ok(w) => {
+      let mut waypoints: Vec<SystemWaypoint> = vec![];
+      for (_index, item) in w.iter().enumerate() {
+        waypoints.push(SystemWaypoint {
+          symbol: item.system_symbol.to_string(),
+          waypoint_type: WaypointType::from_str(&item.waypoint_type).unwrap(),
+          x: item.x,
+          y: item.y
+        });
+      }
+      waypoints
+    }
+    Err(_err) => vec![]
+  }
+}
+
+pub fn get_system_waypoint(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbol: &str, waypoint_symbol: &str) -> Option<SystemWaypoint> {
+  use schema::waypoints;
+
+  let mut connection = pool.get().unwrap();
+  let result: Result<WaypointDB, diesel::result::Error> = waypoints::table
+    .filter(waypoints::system_symbol.eq(system_symbol).and(waypoints::waypoint_symbol.eq(waypoint_symbol)))
+    .select(WaypointDB::as_select())
     .first(&mut connection);
   match result {
     Ok(w) => {
@@ -107,19 +116,27 @@ pub fn get_system_waypoint(pool: &Pool<ConnectionManager<SqliteConnection>>, sys
   }
 }
 
-pub fn insert_system_waypoint(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbol: String, waypoint: &SystemWaypoint) {
-  use schema::system_waypoints;
+pub fn insert_system_waypoint(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbol: &str, waypoint: &SystemWaypoint) {
+  use schema::waypoints;
 
   let mut connection = pool.get().unwrap();
-  let _system_waypoint = NewSystemWaypointDB {
+  let _system_waypoint = NewWaypointDB {
     waypoint_symbol: &waypoint.symbol,
     system_symbol: &system_symbol,
     waypoint_type: &waypoint.waypoint_type.to_string(),
     x: waypoint.x,
-    y: waypoint.y
+    y: waypoint.y,
+    orbitals: "",
+    faction: None,
+    traits: "",
+    chart_waypoint: None,
+    chart_submitted_by: None,
+    chart_submitted_on: None
   };
 
-  insert_or_ignore_into(system_waypoints::table)
+
+
+  insert_or_ignore_into(waypoints::table)
     .values(&_system_waypoint)
     .execute(&mut connection)
     .expect("Error saving new system waypoint");

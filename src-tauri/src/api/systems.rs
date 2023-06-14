@@ -38,9 +38,7 @@ pub async fn get_system(client: State<'_, Client>, pool: State<'_, Pool<Connecti
       let url = format!("/systems/{}", system);
       let result = handle_result(get_request::<System>(&client, token, url, None).await);
       match &result.data {
-        Some(data) => {
-          insert_system(&pool, data);
-        }
+        Some(data) => insert_system(&pool, data),
         None => {}
       };
       Ok(result)

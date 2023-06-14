@@ -1,13 +1,22 @@
+use diesel::{r2d2::{Pool, ConnectionManager}, SqliteConnection};
 use reqwest::Client;
 use tauri::State;
 
-use crate::models::{ship::{Ship, ShipTransactionResponse, ShipType, navigation::{NavigationResponse, ShipJumpResponse, ShipNavigateResponse, FlightMode, Navigation}, cargo::{CargoRefinement, ExtractedCargo, CargoItem, Cargo, CargoResponse}, cooldown::Cooldown, ShipScanResponse, fuel::RefuelResponse}, survey::{SurveyResponse, Survey}, transaction::{TransactionResponse, Transaction}, system::SystemScanResponse, waypoint::WaypointScanResponse, contract::Contract};
+use crate::{models::{ship::{Ship, ShipTransactionResponse, ShipType, navigation::{NavigationResponse, ShipJumpResponse, ShipNavigateResponse, FlightMode, Navigation}, cargo::{CargoRefinement, ExtractedCargo, CargoItem, Cargo, CargoResponse}, cooldown::Cooldown, ShipScanResponse, fuel::RefuelResponse}, survey::{SurveyResponse, Survey}, transaction::{TransactionResponse, Transaction}, system::SystemScanResponse, waypoint::WaypointScanResponse, contract::Contract}, data::fleet::insert_ship};
 
 use super::requests::{ResponseObject, handle_result, get_request, post_request, patch_request};
 
 #[tauri::command]
-pub async fn list_ships(client: State<'_, Client>, token: String) -> Result<ResponseObject<Vec<Ship>>, ()> {
+pub async fn list_ships(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String) -> Result<ResponseObject<Vec<Ship>>, ()> {
   let result = handle_result(get_request::<Vec<Ship>>(&client, token, "/my/ships".to_string(), None).await);
+  match &result.data {
+    Some(data) => {
+      for ship in data.iter() {
+        insert_ship(&pool, ship)
+      }
+    },
+    None => {}
+  };
   Ok(result)
 }
 
@@ -22,10 +31,21 @@ pub async fn purchase_ship(client: State<'_, Client>, token: String, ship_type: 
 }
 
 #[tauri::command]
-pub async fn get_ship(client: State<'_, Client>, token: String, symbol: String) -> Result<ResponseObject<Ship>, ()> {
-  let url = format!("/my/ships/{}", symbol);
-  let result = handle_result(get_request::<Ship>(&client, token, url, None).await);
-  Ok(result)
+pub async fn get_ship(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, symbol: String) -> Result<ResponseObject<Ship>, ()> {
+  match crate::data::fleet::get_ship(&pool, &symbol) {
+    Some(s) => {
+      Ok(ResponseObject { data: Some(s), error: None, meta: None })
+    }
+    None => {
+      let url = format!("/my/ships/{}", symbol);
+      let result = handle_result(get_request::<Ship>(&client, token, url, None).await);
+      match &result.data {
+        Some(data) => insert_ship(&pool, data),
+        None => {}
+      };
+      Ok(result)
+    }
+  }
 }
 
 #[tauri::command]

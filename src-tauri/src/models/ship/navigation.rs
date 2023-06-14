@@ -34,8 +34,8 @@ pub struct RouteWaypoint {
   pub waypoint_type: WaypointType,
   #[serde(rename = "systemSymbol")]
   pub system_symbol: String,
-  pub x: i64,
-  pub y: i64
+  pub x: i32,
+  pub y: i32
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
