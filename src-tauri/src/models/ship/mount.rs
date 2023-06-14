@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use super::requirements::Requirements;
@@ -69,6 +69,31 @@ impl Display for MountType {
   }
 }
 
+impl FromStr for MountType {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Gas Siphon I" => Ok(MountType::GasSiphonI),
+        "Gas Siphon II" => Ok(MountType::GasSiphonII),
+        "Gas Siphon III" => Ok(MountType::GasSiphonIII),
+        "Surveyor I" => Ok(MountType::SurveyorI),
+        "Surveyor II" => Ok(MountType::SurveyorII),
+        "Surveyor III" => Ok(MountType::SurveyorIII),
+        "Sensor Array I" => Ok(MountType::SensorArrayI),
+        "Sensor Array II" => Ok(MountType::SensorArrayII),
+        "Sensor Array III" => Ok(MountType::SensorArrayIII),
+        "Mining Laser I" => Ok(MountType::MiningLaserI),
+        "Mining Laser II" => Ok(MountType::MiningLaserII),
+        "Mining Laser III" => Ok(MountType::MiningLaserIII),
+        "Laser Cannon I" => Ok(MountType::LaserCannonI),
+        "Missile Launcher I" => Ok(MountType::MissileLauncherI),
+        "Turret I" => Ok(MountType::TurretI),
+        _ => Err(())
+      }
+  }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DepositType {
   #[serde(rename = "QUARTZ_SAND")]
@@ -119,5 +144,29 @@ impl Display for DepositType {
         DepositType::UraniteOre => write!(f, "Uranite Ore"),
         DepositType::MeritiumOre => write!(f, "Meritium Ore"),
     }
+  }
+}
+
+impl FromStr for DepositType {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Quartz Sand" => Ok(DepositType::QuartzSand),
+        "Silicon Crystals" => Ok(DepositType::SiliconCrystals),
+        "Precious Stones" => Ok(DepositType::PreciousStones),
+        "Ice Water" => Ok(DepositType::IceWater),
+        "Ammonia Ice" => Ok(DepositType::AmmoniaIce),
+        "Iron Ore" => Ok(DepositType::IronOre),
+        "Copper Ore" => Ok(DepositType::CopperOre),
+        "Silver Ore" => Ok(DepositType::SilverOre),
+        "Aluminum Ore" => Ok(DepositType::AluminumOre),
+        "Gold Ore" => Ok(DepositType::GoldOre),
+        "Platinum Ore" => Ok(DepositType::PlatinumOre),
+        "Diamonds" => Ok(DepositType::Diamonds),
+        "Uranite Ore" => Ok(DepositType::UraniteOre),
+        "Meritium Ore" => Ok(DepositType::MeritiumOre),
+        _ => Err(())
+      }
   }
 }

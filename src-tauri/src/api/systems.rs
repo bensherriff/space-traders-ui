@@ -8,7 +8,7 @@ use super::requests::{ResponseObject, get_request, handle_result};
 
 /// Return a list of all systems.
 #[tauri::command]
-pub async fn list_systems(client: State<'_, Client>, token: String, limit: u64, page: u64) -> Result<ResponseObject<Vec<System>>, ()> {
+pub async fn list_systems(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, limit: u64, page: u64) -> Result<ResponseObject<Vec<System>>, ()> {
   let _limit = limit.to_string();
   let _page = page.to_string();
   let query = vec![
@@ -16,6 +16,14 @@ pub async fn list_systems(client: State<'_, Client>, token: String, limit: u64, 
     ("page", _page)
   ];
   let result = handle_result(get_request::<Vec<System>>(&client, token, "/systems".to_string(), Some(query)).await);
+  match &result.data {
+    Some(data) => {
+      for ship in data {
+        insert_system(&pool, ship);
+      }
+    }
+    None => {}
+  };
   Ok(result)
 }
 

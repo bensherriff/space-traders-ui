@@ -42,8 +42,8 @@ pub fn get_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbo
           symbol: r.system_symbol,
           sector_symbol: r.sector_symbol,
           system_type: SystemType::from_str(&r.system_type).unwrap(),
-          x: r.x as i64,
-          y: r.y as i64,
+          x: r.x,
+          y: r.y,
           waypoints: system_waypoints,
           factions: system_factions
         }) 
@@ -78,8 +78,8 @@ pub fn insert_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system: &
     system_symbol: &system.symbol,
     sector_symbol: &system.sector_symbol,
     system_type: &system.system_type.to_string(),
-    x: system.x as i32,
-    y: system.y as i32,
+    x: system.x,
+    y: system.y,
     waypoints: &_waypoints,
     factions: &_factions
   };
@@ -102,8 +102,8 @@ pub fn get_system_waypoint(pool: &Pool<ConnectionManager<SqliteConnection>>, sys
       Some(SystemWaypoint {
         symbol: w.waypoint_symbol,
         waypoint_type: WaypointType::from_str(&w.waypoint_type).unwrap(),
-        x: w.x as i64,
-        y: w.y as i64
+        x: w.x,
+        y: w.y
       })
     }
     Err(_err) => None
@@ -118,8 +118,8 @@ pub fn insert_system_waypoint(pool: &Pool<ConnectionManager<SqliteConnection>>, 
     waypoint_symbol: &waypoint.symbol,
     system_symbol: &system_symbol,
     waypoint_type: &waypoint.waypoint_type.to_string(),
-    x: waypoint.x as i32,
-    y: waypoint.y as i32
+    x: waypoint.x,
+    y: waypoint.y
   };
 
   insert_or_ignore_into(system_waypoints::table)

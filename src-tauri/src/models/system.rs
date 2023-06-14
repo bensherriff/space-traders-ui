@@ -10,8 +10,8 @@ pub struct System {
   pub sector_symbol: String,
   #[serde(rename = "type")]
   pub system_type: SystemType,
-  pub x: i64,
-  pub y: i64,
+  pub x: i32,
+  pub y: i32,
   pub waypoints: Vec<SystemWaypoint>,
   pub factions: Vec<SymbolResponse>,
 }
@@ -21,8 +21,8 @@ pub struct SystemWaypoint {
   pub symbol: String,
   #[serde(rename = "type")]
   pub waypoint_type: WaypointType,
-  pub x: i64,
-  pub y: i64
+  pub x: i32,
+  pub y: i32
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -99,8 +99,8 @@ pub struct ScannedSystem {
   pub sector_symbol: String,
   #[serde(rename = "type")]
   pub system_type: SystemType,
-  pub x: i64,
-  pub y: i64,
+  pub x: i32,
+  pub y: i32,
   distance: u64
 }
 
@@ -123,7 +123,7 @@ pub struct ConnectedSystem {
   pub system_type: SystemType,
   #[serde(rename = "factionSymbol")]
   pub faction_symbol: String,
-  pub x: i64,
-  pub y: i64,
+  pub x: i32,
+  pub y: i32,
   distance: u64
 }

@@ -11,8 +11,8 @@ pub struct Waypoint {
   pub waypoint_type: WaypointType,
   #[serde(rename = "systemSymbol")]
   pub system_symbol: String,
-  pub x: i64,
-  pub y: i64,
+  pub x: i32,
+  pub y: i32,
   pub orbitals: Vec<SymbolResponse>,
   pub faction: Option<SymbolResponse>,
   pub traits: Vec<WaypointTrait>,

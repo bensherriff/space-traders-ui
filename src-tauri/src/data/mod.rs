@@ -5,9 +5,10 @@ use diesel::sqlite::SqliteConnection;
 use log::warn;
 use tauri::App;
 
-pub mod system;
+pub mod fleet;
 pub mod models;
 pub mod schema;
+pub mod system;
 
 const DB_FILE: &str = "stu.db";
 const UP_SQL_FILE: &str = "up.sql";

@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use super::requirements::Requirements;
@@ -74,3 +74,30 @@ impl Display for ModuleType {
         }
     }
 }
+
+impl FromStr for ModuleType {
+    type Err = ();
+  
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+          "Mineral Processor I" => Ok(ModuleType::MineralProcessorI),
+          "Cargo Hold I" => Ok(ModuleType::CargoHoldI),
+          "Crew Quarters I" => Ok(ModuleType::CrewQuartersI),
+          "Envoy Quarters I" => Ok(ModuleType::EnvoyQuartersI),
+          "Passenger Cabin I" => Ok(ModuleType::PassengerCabinI),
+          "Micro Refinery I" => Ok(ModuleType::MicroRefineryI),
+          "Ore Refinery I" => Ok(ModuleType::OreRefineryI),
+          "Fuel Refinery I" => Ok(ModuleType::FuelRefineryI),
+          "Science Lab I" => Ok(ModuleType::ScienceLabI),
+          "Jump Drive I" => Ok(ModuleType::JumpDriveI),
+          "Jump Drive II" => Ok(ModuleType::JumpDriveII),
+          "Jump Drive III" => Ok(ModuleType::JumpDriveIII),
+          "Warp Drive I" => Ok(ModuleType::WarpDriveI),
+          "Warp Drive II" => Ok(ModuleType::WarpDriveII),
+          "Warp Drive III" => Ok(ModuleType::WarpDriveIII),
+          "Shield Generator I" => Ok(ModuleType::ShieldGeneratorI),
+          "Shield Generator II" => Ok(ModuleType::ShieldGeneratorII),
+          _ => Err(())
+        }
+    }
+  }

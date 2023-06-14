@@ -22,7 +22,7 @@ Requires [diesel_cli](https://crates.io/crates/diesel_cli)
 
 - Setup .env with the DATABASE_URL
 ```curl
-echo DATABASE_URL=sqlite://data/sqlite.db > .env
+echo DATABASE_URL=sqlite://data/stu.db > .env
 source .env
 ```
 
