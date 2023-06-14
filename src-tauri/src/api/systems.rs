@@ -2,7 +2,7 @@ use diesel::{SqliteConnection, r2d2::{ConnectionManager, Pool}};
 use reqwest::Client;
 use tauri::State;
 
-use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, data::system::insert_system};
+use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, data::system::{insert_system, insert_waypoint}};
 
 use super::requests::{ResponseObject, get_request, handle_result};
 
@@ -56,10 +56,21 @@ pub async fn list_waypoints(client: State<'_, Client>, token: String, system: St
 
 /// Get the details of a waypoint.
 #[tauri::command]
-pub async fn get_waypoint(client: State<'_, Client>, token: String, system: String, waypoint: String) -> Result<ResponseObject<Waypoint>, ()> {
-  let url = format!("/systems/{}/waypoints/{}", system, waypoint);
-  let result = handle_result(get_request::<Waypoint>(&client, token, url, None).await);
-  Ok(result)
+pub async fn get_waypoint(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, system: String, waypoint: String) -> Result<ResponseObject<Waypoint>, ()> {
+  match crate::data::system::get_waypoint(&pool, &waypoint) {
+    Some(w) => {
+      Ok(ResponseObject { data: Some(w), error: None, meta: None })
+    }
+    None => {
+      let url = format!("/systems/{}/waypoints/{}", system, waypoint);
+      let result = handle_result(get_request::<Waypoint>(&client, token, url, None).await);
+      match &result.data {
+        Some(data) => insert_waypoint(&pool, data),
+        None => {}
+      };
+      Ok(result)
+    }
+  }
 }
 
 /// Retrieve imports, exports and exchange data from a marketplace.

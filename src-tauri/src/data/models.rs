@@ -24,6 +24,26 @@ pub struct NewSystemDB<'a> {
 }
 
 #[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::data::schema::system_waypoints)]
+pub struct SystemWaypointDB {
+  pub waypoint_symbol: String,
+  pub system_symbol: String,
+  pub waypoint_type: String,
+  pub x: i32,
+  pub y: i32,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::data::schema::system_waypoints)]
+pub struct NewSystemWaypointDB<'a> {
+  pub waypoint_symbol: &'a str,
+  pub system_symbol: &'a str,
+  pub waypoint_type: &'a str,
+  pub x: i32,
+  pub y: i32,
+}
+
+#[derive(Queryable, Selectable)]
 #[diesel(table_name = crate::data::schema::waypoints)]
 pub struct WaypointDB {
   pub waypoint_symbol: String,
@@ -258,4 +278,20 @@ pub struct NewMountDB<'a> {
   pub req_power: Option<i32>,
   pub req_crew: Option<i32>,
   pub req_slots: Option<i32>
+}
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::data::schema::waypoint_traits)]
+pub struct WaypointTraitDB {
+  pub trait_symbol: String,
+  pub name: String,
+  pub description: String
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::data::schema::waypoint_traits)]
+pub struct NewWaypointTraitDB<'a> {
+  pub trait_symbol: &'a str,
+  pub name: &'a str,
+  pub description: &'a str,
 }

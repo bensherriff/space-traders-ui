@@ -105,6 +105,16 @@ diesel::table! {
 }
 
 diesel::table! {
+  system_waypoints (waypoint_symbol) {
+    waypoint_symbol -> Text,
+    system_symbol -> Text,
+    waypoint_type -> Text,
+    x -> Integer,
+    y -> Integer,
+  }
+}
+
+diesel::table! {
   waypoints (waypoint_symbol) {
     waypoint_symbol -> Text,
     system_symbol -> Text,
@@ -121,6 +131,14 @@ diesel::table! {
 }
 
 diesel::table! {
+  waypoint_traits (trait_symbol) {
+    trait_symbol -> Text,
+    name -> Text,
+    description -> Text
+  }
+}
+
+diesel::table! {
   systems (system_symbol) {
     system_symbol -> Text,
     sector_symbol -> Text,
@@ -130,12 +148,13 @@ diesel::table! {
     factions -> Text,
   }
 }
-
 diesel::allow_tables_to_appear_in_same_query!(
   fleet,
   fleet_modules,
   fleet_mounts,
   fleet_cargo,
   systems,
+  system_waypoints,
   waypoints,
+  waypoint_traits,
 );

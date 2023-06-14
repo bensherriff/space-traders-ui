@@ -325,8 +325,7 @@ pub fn get_mounts(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symbol:
           deposits: match mount.deposits {
             Some(d) => {
               let mut mount_deposits: Vec<DepositType> = vec![];
-              let deposits = d.split(",");
-              for deposit in deposits {
+              for (_index, deposit) in d.split(",").filter(|&x| !x.is_empty()).enumerate() {
                 mount_deposits.push(DepositType::from_str(&deposit).unwrap());
               }
               Some(mount_deposits)

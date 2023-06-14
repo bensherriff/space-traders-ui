@@ -7,9 +7,9 @@ pub struct Chart {
   #[serde(rename= "waypointSymbol")]
   pub waypoint: Option<String>,
   #[serde(rename = "submittedBy")]
-  pub submitted_by: String,
+  pub submitted_by: Option<String>,
   #[serde(rename = "submittedOn")]
-  pub submitted_on: String
+  pub submitted_on: Option<String>
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
