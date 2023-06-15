@@ -42,7 +42,6 @@ export default function System() {
                 <>
                   {system.waypoints.map((waypoint, index) => {
                     let colors = Text.waypointTypeColor(waypoint.type);
-                    console.log(colors);
                     return (
                       <NavLink key={index} to={`/system/${systemId}/${waypoint.symbol}`}>
                         <div className={`block px-2 py-8 mb-1 mr-1 rounded-md bg-stone-900 hover:bg-stone-950 text-lg`}>

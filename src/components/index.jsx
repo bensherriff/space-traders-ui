@@ -29,7 +29,7 @@ export function Button({className='', onClick=() => {}, children=(<></>), disabl
     )
   } else {
     return (
-      <button className={`${className} bg-cyan-600 hover:bg-cyan-800 shadow-md rounded-xl m-1 p-1 text-white`} onClick={onClick}>{children}</button>
+      <button className={`${className} bg-cyan-600 hover:bg-cyan-800 hover:text-black shadow-md rounded-xl m-1 p-1`} onClick={onClick}>{children}</button>
     )
   }
 }

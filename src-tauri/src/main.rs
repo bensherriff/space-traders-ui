@@ -48,6 +48,7 @@ fn main() {
       api::fleet::list_ships,
       api::fleet::purchase_ship,
       api::fleet::get_ship,
+      api::fleet::get_ships_at_waypoint,
       api::fleet::get_cargo,
       api::fleet::orbit_ship,
       api::fleet::refine,

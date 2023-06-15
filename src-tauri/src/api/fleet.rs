@@ -2,7 +2,7 @@ use diesel::{r2d2::{Pool, ConnectionManager}, SqliteConnection};
 use reqwest::Client;
 use tauri::State;
 
-use crate::{models::{ship::{Ship, ShipTransactionResponse, ShipType, navigation::{NavigationResponse, ShipJumpResponse, ShipNavigateResponse, FlightMode, Navigation}, cargo::{CargoRefinement, ExtractedCargo, CargoItem, Cargo, CargoResponse}, cooldown::Cooldown, ShipScanResponse, fuel::RefuelResponse}, survey::{SurveyResponse, Survey}, transaction::{TransactionResponse, Transaction}, system::SystemScanResponse, waypoint::WaypointScanResponse, contract::Contract}, data::fleet::insert_ship};
+use crate::{models::{ship::{Ship, ShipTransactionResponse, ShipType, navigation::{NavigationResponse, ShipJumpResponse, ShipNavigateResponse, FlightMode, Navigation}, cargo::{CargoRefinement, ExtractedCargo, CargoItem, Cargo, CargoResponse}, cooldown::Cooldown, ShipScanResponse, fuel::RefuelResponse}, survey::{SurveyResponse, Survey}, transaction::{TransactionResponse, Transaction}, system::SystemScanResponse, waypoint::WaypointScanResponse, contract::Contract, chart::ChartResponse}, data::fleet::insert_ship};
 
 use super::requests::{ResponseObject, handle_result, get_request, post_request, patch_request};
 
@@ -49,6 +49,12 @@ pub async fn get_ship(client: State<'_, Client>, pool: State<'_, Pool<Connection
 }
 
 #[tauri::command]
+pub fn get_ships_at_waypoint(pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, waypoint: String) -> Result<ResponseObject<Vec<Ship>>, ()> {
+  let ships = crate::data::fleet::get_ships_at_waypoint(&pool, &waypoint);
+  Ok(ResponseObject { data: Some(ships), error: None, meta: None })
+}
+
+#[tauri::command]
 pub async fn get_cargo(client: State<'_, Client>, token: String, symbol: String) -> Result<ResponseObject<Ship>, ()> {
   let url = format!("/my/ships/{}/cargo", symbol);
   let result = handle_result(get_request::<Ship>(&client, token, url, None).await);
@@ -56,9 +62,13 @@ pub async fn get_cargo(client: State<'_, Client>, token: String, symbol: String)
 }
 
 #[tauri::command]
-pub async fn orbit_ship(client: State<'_, Client>, token: String, symbol: String) -> Result<ResponseObject<NavigationResponse>, ()> {
+pub async fn orbit_ship(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, symbol: String) -> Result<ResponseObject<NavigationResponse>, ()> {
   let url = format!("/my/ships/{}/orbit", symbol);
   let result = handle_result(post_request::<NavigationResponse>(&client, token, url, None).await);
+  match &result.data {
+    Some(data) => crate::data::fleet::update_ship_navigation(&pool, &symbol, &data.nav),
+    None => {}
+  };
   Ok(result)
 }
 
@@ -70,9 +80,9 @@ pub async fn refine(client: State<'_, Client>, token: String, symbol: String) ->
 }
 
 #[tauri::command]
-pub async fn create_chart(client: State<'_, Client>, token: String, symbol: String) -> Result<ResponseObject<CargoRefinement>, ()> {
+pub async fn create_chart(client: State<'_, Client>, token: String, symbol: String) -> Result<ResponseObject<ChartResponse>, ()> {
   let url = format!("/my/ships/{}/chart", symbol);
-  let result = handle_result(post_request::<CargoRefinement>(&client, token, url, None).await);
+  let result = handle_result(post_request::<ChartResponse>(&client, token, url, None).await);
   Ok(result)
 }
 
@@ -84,9 +94,13 @@ pub async fn get_cooldown(client: State<'_, Client>, token: String, symbol: Stri
 }
 
 #[tauri::command]
-pub async fn dock_ship(client: State<'_, Client>, token: String, symbol: String) -> Result<ResponseObject<NavigationResponse>, ()> {
+pub async fn dock_ship(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, symbol: String) -> Result<ResponseObject<NavigationResponse>, ()> {
   let url = format!("/my/ships/{}/dock", symbol);
   let result = handle_result(post_request::<NavigationResponse>(&client, token, url, None).await);
+  match &result.data {
+    Some(data) => crate::data::fleet::update_ship_navigation(&pool, &symbol, &data.nav),
+    None => {}
+  };
   Ok(result)
 }
 
@@ -155,31 +169,43 @@ pub async fn jump_ship(client: State<'_, Client>, token: String, symbol: String,
 ///
 /// To travel between systems, see the ship's warp or jump actions.
 #[tauri::command]
-pub async fn navigate_ship(client: State<'_, Client>, token: String, symbol: String, waypoint: String) -> Result<ResponseObject<ShipNavigateResponse>, ()> {
+pub async fn navigate_ship(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, symbol: String, waypoint: String) -> Result<ResponseObject<ShipNavigateResponse>, ()> {
   let url = format!("/my/ships/{}/navigate", symbol);
   let body = serde_json::json!({
     "waypointSymbol": waypoint
   });
   let result = handle_result(post_request::<ShipNavigateResponse>(&client, token, url, Some(body.to_string())).await);
+  match &result.data {
+    Some(data) => crate::data::fleet::update_ship_navigation(&pool, &symbol, &data.nav),
+    None => {}
+  };
   Ok(result)
 }
 
 /// Update the nav data of a ship, such as the flight mode.
 #[tauri::command]
-pub async fn patch_ship_navigation(client: State<'_, Client>, token: String, symbol: String, flight_mode: FlightMode) -> Result<ResponseObject<Navigation>, ()> {
+pub async fn patch_ship_navigation(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, symbol: String, flight_mode: FlightMode) -> Result<ResponseObject<Navigation>, ()> {
   let url = format!("/my/ships/{}/nav", symbol);
   let body = serde_json::json!({
     "flightMode": flight_mode
   });
   let result = handle_result(patch_request::<Navigation>(&client, token, url, Some(body.to_string())).await);
+  match &result.data {
+    Some(data) => crate::data::fleet::update_ship_navigation(&pool, &symbol, &data),
+    None => {}
+  };
   Ok(result)
 }
 
 /// Get the current nav status of a ship
 #[tauri::command]
-pub async fn get_ship_nav(client: State<'_, Client>, token: String, symbol: String) -> Result<ResponseObject<Navigation>, ()> {
+pub async fn get_ship_nav(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, symbol: String) -> Result<ResponseObject<Navigation>, ()> {
   let url = format!("/my/ships/{}/nav", symbol);
   let result = handle_result(get_request::<Navigation>(&client, token, url, None).await);
+  match &result.data {
+    Some(data) => crate::data::fleet::update_ship_navigation(&pool, &symbol, &data),
+    None => {}
+  };
   Ok(result)
 }
 
@@ -190,12 +216,16 @@ pub async fn get_ship_nav(client: State<'_, Client>, token: String, symbol: Stri
 /// The returned response will detail the route information including the expected time of arrival.
 /// Most ship actions are unavailable until the ship has arrived at it's destination.
 #[tauri::command]
-pub async fn warp_ship(client: State<'_, Client>, token: String, symbol: String, waypoint: String) -> Result<ResponseObject<Navigation>, ()> {
+pub async fn warp_ship(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, symbol: String, waypoint: String) -> Result<ResponseObject<Navigation>, ()> {
   let url = format!("/my/ships/{}/warp", symbol);
   let body = serde_json::json!({
     "waypointSymbol": waypoint
   });
   let result = handle_result(post_request::<Navigation>(&client, token, url, Some(body.to_string())).await);
+  match &result.data {
+    Some(data) => crate::data::fleet::update_ship_navigation(&pool, &symbol, &data),
+    None => {}
+  };
   Ok(result)
 }
 

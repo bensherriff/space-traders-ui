@@ -16,7 +16,7 @@ use crate::models::ship::registration::{Registration, Role};
 use crate::models::ship::requirements::Requirements;
 use crate::models::waypoint::WaypointType;
 
-use diesel::{prelude::*, insert_into, replace_into, delete};
+use diesel::{prelude::*, insert_into, replace_into, delete, update};
 use diesel::{RunQueryDsl, QueryDsl, SqliteConnection, r2d2::{Pool, ConnectionManager}};
 use log::warn;
 
@@ -30,91 +30,116 @@ pub fn get_ship(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symbol: &
     .first(&mut connection);
 
   match result {
-    Ok(r) => {
-      // Ship Cargo
-      let ship_symbol = &r.ship_symbol.to_string();
-      let cargo_items = get_cargo_items(pool, &ship_symbol);
-      let cargo = Cargo {
-        capacity: r.cargo_capacity,
-        units: r.cargo_units,
-        inventory: cargo_items
-      };
-      Some(Ship {
-        symbol: (&ship_symbol).to_string(),
-        registration: Registration {
-          name: r.reg_name,
-          faction_symbol: r.reg_faction_symbol,
-          role: Role::from_str(&r.reg_role).unwrap()
-        },
-        nav: Navigation {
-          system_symbol: r.nav_system_symbol,
-          waypoint_symbol: r.nav_waypoint_symbol,
-          route: Route {
-            destination: RouteWaypoint {
-              symbol: r.nav_dest_symbol,
-              waypoint_type: WaypointType::from_str(&r.nav_dest_waypoint_type).unwrap(),
-              system_symbol: r.nav_dest_system_symbol,
-              x: r.nav_dest_x,
-              y: r.nav_dest_y
-            },
-            departure: RouteWaypoint {
-              symbol: r.nav_dep_symbol,
-              waypoint_type: WaypointType::from_str(&r.nav_dep_waypoint_type).unwrap(),
-              system_symbol: r.nav_dep_system_symbol,
-              x: r.nav_dep_x,
-              y: r.nav_dep_y
-            },
-            departure_time: r.nav_departure_time,
-            arrival_time: r.nav_arrival_time
-          },
-          status: NavStatus::from_str(&r.nav_status).unwrap(),
-          flight_mode: FlightMode::from_str(&r.nav_flight_mode).unwrap()
-        },
-        crew: crew::Crew {
-          current: r.crew_current,
-          required: r.crew_required,
-          capacity: r.crew_capacity,
-          rotation: Rotation::from_str(&r.crew_rotation).unwrap(),
-          morale: r.crew_moral,
-          wages: r.crew_wages
-        },
-        frame: Frame {
-        symbol: FrameType::from_str(&r.frame_symbol).unwrap(),
-        name: r.frame_name,
-        description: r.frame_desc,
-        condition: r.frame_condition,
-        module_slots: r.frame_modules,
-        mounting_points: r.frame_mounts,
-        fuel_capacity: r.frame_fuel_capacity,
-        requirements: Requirements { power: r.frame_req_power, crew: r.frame_req_crew, slots: r.frame_req_slots }
-      },
-        reactor: Reactor {
-          symbol: r.reactor_symbol,
-          name: r.reactor_name,
-          description: r.reactor_desc,
-          condition: r.reactor_condition,
-          power_output: r.reactor_power_output,
-          requirements: Requirements { power: r.reactor_req_power, crew: r.reactor_req_crew, slots: r.reactor_req_slots }
-        },
-        engine: Engine {
-          symbol: EngineType::from_str(&r.engine_symbol).unwrap(),
-          name: r.engine_name,
-          description: r.engine_desc,
-          condition: r.engine_condition,
-          speed: r.engine_speed,
-          requirements: Requirements { power: r.engine_req_power, crew: r.engine_req_power, slots: r.engine_req_slots }
-        },
-        modules: get_modules(pool, &ship_symbol),
-        mounts: get_mounts(pool, &ship_symbol),
-        cargo,
-        fuel: Fuel {
-          current: r.fuel_current,
-          capacity: r.fuel_capacity,
-          consumed: Consumed { amount: r.fuel_consumed_amount, timestamp: r.fuel_consumed_timestamp }
-        }
-      })
-    }
+    Ok(r) =>Some(build_ship_from_db(pool, &r)),
     Err(_err) => None
+  }
+}
+
+pub fn get_ships_at_waypoint(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoint: &str) -> Vec<Ship> {
+  use schema::fleet;
+
+  let mut connection = pool.get().unwrap();
+  let result: Result<Vec<ShipDB>, diesel::result::Error> = fleet::table
+    .filter(fleet::nav_waypoint_symbol.eq(waypoint))
+    .select(ShipDB::as_select())
+    .load(&mut connection);
+  match result {
+    Ok(r) => {
+      let mut ships: Vec<Ship> = vec![];
+      for (_index, ship_db) in r.iter().enumerate() {
+        let ship = build_ship_from_db(pool, ship_db);
+        // if matches!(ship.nav.status, NavStatus::Docked | NavStatus::InOrbit) {
+        if matches!(ship.nav.status, NavStatus::Docked) {
+          ships.push(ship);
+        }
+      }
+      ships
+    }
+    Err(_err) => vec![]
+  }
+}
+
+fn build_ship_from_db(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_db: &ShipDB) -> Ship {
+  let ship_symbol = &ship_db.ship_symbol.to_string();
+  let cargo_items = get_cargo_items(pool, &ship_symbol);
+  let cargo = Cargo {
+    capacity: ship_db.cargo_capacity,
+    units: ship_db.cargo_units,
+    inventory: cargo_items
+  };
+  Ship {
+    symbol: (&ship_symbol).to_string(),
+    registration: Registration {
+      name: ship_db.reg_name.to_owned(),
+      faction_symbol: ship_db.reg_faction_symbol.to_owned(),
+      role: Role::from_str(&ship_db.reg_role).unwrap()
+    },
+    nav: Navigation {
+      system_symbol: ship_db.nav_system_symbol.to_owned(),
+      waypoint_symbol: ship_db.nav_waypoint_symbol.to_owned(),
+      route: Route {
+        destination: RouteWaypoint {
+          symbol: ship_db.nav_dest_symbol.to_owned(),
+          waypoint_type: WaypointType::from_str(&ship_db.nav_dest_waypoint_type).unwrap(),
+          system_symbol: ship_db.nav_dest_system_symbol.to_owned(),
+          x: ship_db.nav_dest_x,
+          y: ship_db.nav_dest_y
+        },
+        departure: RouteWaypoint {
+          symbol: ship_db.nav_dep_symbol.to_owned(),
+          waypoint_type: WaypointType::from_str(&ship_db.nav_dep_waypoint_type).unwrap(),
+          system_symbol: ship_db.nav_dep_system_symbol.to_owned(),
+          x: ship_db.nav_dep_x,
+          y: ship_db.nav_dep_y
+        },
+        departure_time: ship_db.nav_departure_time.to_owned(),
+        arrival_time: ship_db.nav_arrival_time.to_owned()
+      },
+      status: NavStatus::from_str(&ship_db.nav_status).unwrap(),
+      flight_mode: FlightMode::from_str(&ship_db.nav_flight_mode).unwrap()
+    },
+    crew: crew::Crew {
+      current: ship_db.crew_current,
+      required: ship_db.crew_required,
+      capacity: ship_db.crew_capacity,
+      rotation: Rotation::from_str(&ship_db.crew_rotation).unwrap(),
+      morale: ship_db.crew_moral,
+      wages: ship_db.crew_wages
+    },
+    frame: Frame {
+    symbol: FrameType::from_str(&ship_db.frame_symbol).unwrap(),
+    name: ship_db.frame_name.to_owned(),
+    description: ship_db.frame_desc.to_owned(),
+    condition: ship_db.frame_condition,
+    module_slots: ship_db.frame_modules,
+    mounting_points: ship_db.frame_mounts,
+    fuel_capacity: ship_db.frame_fuel_capacity,
+    requirements: Requirements { power: ship_db.frame_req_power, crew: ship_db.frame_req_crew, slots: ship_db.frame_req_slots }
+  },
+    reactor: Reactor {
+      symbol: ship_db.reactor_symbol.to_owned(),
+      name: ship_db.reactor_name.to_owned(),
+      description: ship_db.reactor_desc.to_owned(),
+      condition: ship_db.reactor_condition,
+      power_output: ship_db.reactor_power_output,
+      requirements: Requirements { power: ship_db.reactor_req_power, crew: ship_db.reactor_req_crew, slots: ship_db.reactor_req_slots }
+    },
+    engine: Engine {
+      symbol: EngineType::from_str(&ship_db.engine_symbol).unwrap(),
+      name: ship_db.engine_name.to_owned(),
+      description: ship_db.engine_desc.to_owned(),
+      condition: ship_db.engine_condition,
+      speed: ship_db.engine_speed,
+      requirements: Requirements { power: ship_db.engine_req_power, crew: ship_db.engine_req_power, slots: ship_db.engine_req_slots }
+    },
+    modules: get_modules(pool, &ship_symbol),
+    mounts: get_mounts(pool, &ship_symbol),
+    cargo,
+    fuel: Fuel {
+      current: ship_db.fuel_current,
+      capacity: ship_db.fuel_capacity,
+      consumed: Consumed { amount: ship_db.fuel_consumed_amount, timestamp: ship_db.fuel_consumed_timestamp.to_owned() }
+    }
   }
 }
 
@@ -194,6 +219,37 @@ pub fn insert_ship(pool: &Pool<ConnectionManager<SqliteConnection>>, ship: &Ship
         warn!("{}", err);
       }
     };
+}
+
+pub fn update_ship_navigation(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symbol: &str, navigation: &Navigation) {
+  use schema::fleet;
+
+  let mut connection = pool.get().unwrap();
+  let result = update(fleet::table)
+    .filter(fleet::ship_symbol.eq(ship_symbol))
+    .set((
+      fleet::nav_system_symbol.eq(&navigation.system_symbol),
+      fleet::nav_status.eq(&navigation.status.to_string()),
+      fleet::nav_flight_mode.eq(&navigation.flight_mode.to_string()),
+      fleet::nav_waypoint_symbol.eq(&navigation.waypoint_symbol),
+      fleet::nav_departure_time.eq(&navigation.route.departure_time),
+      fleet::nav_arrival_time.eq(&navigation.route.arrival_time),
+      fleet::nav_dest_symbol.eq(&navigation.route.destination.symbol),
+      fleet::nav_dest_waypoint_type.eq(&navigation.route.destination.waypoint_type.to_string()),
+      fleet::nav_dest_system_symbol.eq(&navigation.route.destination.system_symbol),
+      fleet::nav_dest_x.eq(&navigation.route.destination.x),
+      fleet::nav_dest_y.eq(&navigation.route.destination.y),
+      fleet::nav_dep_symbol.eq(&navigation.route.departure.symbol),
+      fleet::nav_dep_waypoint_type.eq(&navigation.route.departure.waypoint_type.to_string()),
+      fleet::nav_dep_system_symbol.eq(&navigation.route.departure.system_symbol),
+      fleet::nav_dep_x.eq(&navigation.route.departure.x),
+      fleet::nav_dep_y.eq(&navigation.route.departure.y),
+    ))
+    .execute(&mut connection);
+  match result {
+    Ok(_) => {},
+    Err(_err) => {}
+  }
 }
 
 pub fn get_cargo_items(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symbol: &str) -> Vec<CargoItem> {
