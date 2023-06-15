@@ -7,6 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
+        'hover': '#24c8db',
         's-neutron-t': '#f8fafc',
         's-neutron-b': '#475569',
         's-red-t': '#fef2f2',
@@ -30,7 +31,7 @@ export default {
         'w-moon-t': '#f8fafc',
         'w-moon-b': '#64748b',
         'w-gas-t': '#fff7ed',
-        'w-gas-bg': '#ea580c',
+        'w-gas-b': '#ea580c',
         'w-nebula-t': '#422006',
         'w-nebula-b': '#fde047',
         'w-asteroid-t': '#1a2e05',

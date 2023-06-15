@@ -61,6 +61,7 @@ textarea, .button {
   border-color: #396cd8;
   background-color: #396cd8;
 }
+
 .button:active {
   border-color: #396cd8;
   background-color: #e8e8e8;
@@ -71,8 +72,25 @@ textarea,
   outline: none;
 }
 
-#token-input {
-  margin-right: 5px;
+/* Works on Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: gray black;
+}
+
+/* Works on Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+  width: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: black;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: gray;
+  border-radius: 20px;
+  border: 3px solid black;
 }
 
 @media (prefers-color-scheme: dark) {

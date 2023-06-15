@@ -5,10 +5,12 @@ import { Storage, Text } from "../js";
 import { useNavigate } from "react-router-dom";
 import { Button } from ".";
 
-export default function Login( { setAgent } ) {
+export default function Login({ setAgent }) {
   const [token, setToken] = useState("");
+  const [name, setName] = useState("");
+  const [faction, setFaction] = useState("");
+  const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [loadDatabaseStatus, setLoadDatabaseStatus] = useState("Load Database Data");
   const [status, setStatus] = useState({});
   const navigate = useNavigate();
 
@@ -22,6 +24,10 @@ export default function Login( { setAgent } ) {
 
   async function connect() {
     get_my_agent();
+  }
+
+  async function register() {
+
   }
 
   async function get_my_agent() {
@@ -55,22 +61,62 @@ export default function Login( { setAgent } ) {
           <LoginLogo link={"https://github.com/bensherriff/space-traders-ui"} src={"/github-mark-white.svg"} alt={"Github logo"}/>
         </div>
 
-        <form
-          className="mt-10 row flex flex-col justify-center items-center"
-          onSubmit={(e) => {
-            e.preventDefault();
-            connect();
-          }}
-        >
-          <textarea
-            className="w-10/12 h-60"
-            id="token-input"
-            value={token}
-            onChange={(e) => setToken(e.currentTarget.value)}
-            placeholder="Enter your token..."
-          />
-          <button className="button w-11/12 mt-10 bg-gray-600" type="submit">Connect</button>
-        </form>
+        <div className="flex justify-between">
+          <form
+            className="mt-10 row flex flex-col justify-center mx-10 w-full"
+            onSubmit={(e) => {
+              e.preventDefault();
+              connect();
+            }}
+          >
+            <div>
+              <label>Access Token</label>
+              <input
+                className="text-black ml-2 p-1 rounded"
+                value={token}
+                onChange={(e) => setToken(e.currentTarget.value)}
+                placeholder="Enter your token..."
+              />
+            </div>
+            <button className="button mt-2 bg-gray-600" type="submit">Connect</button>
+          </form>
+          <form
+            className="mt-10 row flex flex-col justify-center mx-10 w-full"
+            onSubmit={(e) => {
+              e.preventDefault();
+              register();
+            }}
+          >
+            <div>
+              <label className="float-left">Name</label>
+              <input
+                className="text-black ml-2 p-1 rounded float-right"
+                value={name}
+                onChange={(e) => setName(e.currentTarget.value)}
+                placeholder="Between 3-14 characters"
+              />
+            </div>
+            <div>
+              <label className="float-left">Faction</label>
+              <input
+                className="text-black ml-2 p-1 rounded float-right"
+                value={faction}
+                onChange={(e) => setFaction(e.currentTarget.value)}
+                placeholder="REPLACE TO DROPDOWN"
+              />
+            </div>
+            <div>
+              <label className="float-left">Email</label>
+              <input
+                className="text-black ml-2 p-1 rounded float-right"
+                value={email}
+                onChange={(e) => setEmail(e.currentTarget.value)}
+                placeholder="For reserved names"
+              />
+            </div>
+            <button className="button mt-2 bg-gray-600" type="submit">Register</button>
+          </form>
+        </div>
 
         <p>{errorMessage}</p>
       </div>

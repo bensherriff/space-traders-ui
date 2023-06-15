@@ -8,7 +8,7 @@ import { WaypointHeader } from '../components/Location/LocationHeader';
 
 export default function Waypoint() {
   const {systemId, waypointId} = useParams();
-  const [waypoint, setWaypoint] = useState({});
+  const [waypoint, setWaypoint] = useState(null);
   const [waypointTraits, setWaypointTraits] = useState([]);
 
   useEffect(() => {
@@ -28,9 +28,13 @@ export default function Waypoint() {
 
   return (
     <div>
-      {waypoint && waypoint.type? (
+      {waypoint? (
         <div>
-          <WaypointHeader symbol={waypoint.symbol} type={waypoint.type}/>
+          <WaypointHeader symbol={waypoint.symbol} type={waypoint.type} faction={waypoint.faction.symbol}/>
+          <div className='flex ml-6 cursor-default select-none'>
+            <NavLink to={`/system/${systemId}`}><span>System {systemId}</span></NavLink>
+            <span className='pl-4'>({waypoint.x},{waypoint.y})</span>
+          </div>
           <hr className='mb-5'/>
           <div className='w-full text-center mb-5'>
             {waypointTraits && Array.isArray(waypointTraits)? (
@@ -39,30 +43,14 @@ export default function Waypoint() {
               ))
             ): <></>}
           </div>
-          <div className='flex'>
-            <NavLink to={`/system/${systemId}`}>
-              <span className='block p-2 mb-2 bg-[#4b5563] hover:bg-[#2b3e58] shadow-md rounded-md select-none mr-2'>System: {systemId}</span>
-            </NavLink>
-            {waypoint.faction? 
-            <NavLink to={`/faction/${waypoint.faction.symbol}`}>
-              <span className='block p-2 mb-2 bg-[#4b5563] hover:bg-[#2b3e58] shadow-md rounded-md select-none mr-2'>Faction: {waypoint.faction.symbol}</span>
-            </NavLink>
-            : <></>}
-            <span className='block p-2 mb-2 bg-[#4b5563] shadow-md rounded-md select-none'>Coordinates: ({waypoint.x},{waypoint.y})</span>
+          <h2 className='text-xl'>In Orbit</h2>
+          <div className='grid grid-cols-12 gap-1'>
+            {waypoint.orbitals.map((orbital, index) => (
+              <NavLink key={index} to={`/system/${systemId}/${orbital.symbol}`}>
+                <span className='inline-block py-2 p-1 mb-2 bg-[#4b5563] hover:bg-[#2b3e58] shadow-md rounded-md select-none mr-2'>{orbital.symbol}</span>
+              </NavLink>
+            ))}
           </div>
-          {waypoint.orbitals && Array.isArray(waypoint.orbitals) && waypoint.orbitals.length > 0? (
-            <div>
-              <hr className='my-2'/>
-              <h2 className='text-xl'>In Orbit</h2>
-              <div className='flex'>
-                {waypoint.orbitals.map((orbital, index) => (
-                  <NavLink key={index} to={`/system/${systemId}/${orbital.symbol}`}>
-                    <span className='block p-2 mb-2 bg-[#4b5563] hover:bg-[#2b3e58] shadow-md rounded-md select-none mr-2'>{orbital.symbol}</span>
-                  </NavLink>
-                ))}
-              </div>
-            </div> 
-          ): <></>}
           {waypoint.type == 'JUMP_GATE'? (
             <JumpGate systemId={systemId} waypointId={waypointId}/>
           ): <></>}

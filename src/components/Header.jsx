@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Storage, Text } from "../js";
 import { NavLink } from "react-router-dom";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faHouse, faCoins } from '@fortawesome/free-solid-svg-icons'
 
 export default function Header() {
   const [agent, setAgent] = useState(Storage.getAgent());
@@ -15,34 +17,32 @@ export default function Header() {
   let system = `${split[0]}-${split[1]}`;
 
   return (
-    <header className="border-b border-slate-900 mb-2 bg-slate-500 shadow-sm">
-      <ul className="flex justify-between px-4">
-        <div className="flex">
-        <HeaderItem to={"/fleet"}>{agent.symbol}</HeaderItem>
-        <HeaderItem to={`/faction/${agent.startingFaction}`}>({agent.startingFaction})</HeaderItem>
-        </div>
-        <div className="flex">
-          <HeaderItem>{Text.currency(agent.credits)}</HeaderItem>
-          <HeaderItem>|</HeaderItem>
-          <HeaderItem to={`/system/${system}/${agent.headquarters}`}>{agent.headquarters}</HeaderItem>
-          <HeaderItem to={`/system/${system}`}>{system}</HeaderItem>
-        </div>
-      </ul>
+    <header className="bg-stone-900 sticky top-0">
+      <div className="flex justify-between px-2 py-1 ">
+          <span className="flex">
+            <HeaderItem>{agent.symbol}</HeaderItem>
+            <HeaderItem to={`/faction/${agent.startingFaction}`}>({agent.startingFaction})</HeaderItem>
+          </span>
+          <span>
+            <HeaderItem className="pr-10"><>
+            <FontAwesomeIcon className="text-yellow-300 pr-2" icon={faCoins}/>{Text.currency(agent.credits)}
+            </></HeaderItem>
+            <HeaderItem to={`/system/${system}/${agent.headquarters}`}><>
+              <FontAwesomeIcon className="text-orange-600 pr-2" icon={faHouse}/>{agent.headquarters}
+            </></HeaderItem>
+          </span>
+      </div>
     </header>
   )
 }
 
-function HeaderItem({ to, children }) {
+function HeaderItem({ children, to, className="" }) {
   if (to) {
     return (
-      <li className="">
-        <NavLink className="inline-block px-1 py-1 text-gray-200 select-none text-xl" to={to}>{children}</NavLink>
-      </li>
+      <NavLink className={`${className} inline-block px-1 text-gray-200 select-none text-xl`} to={to}>{children}</NavLink>
     )  
   }
   return (
-    <li className="">
-      <h1 className="inline-block px-1 py-1 text-gray-200 select-none text-xl">{children}</h1>
-    </li>
+    <h1 className={`${className} inline-block px-1 text-gray-200 select-none text-xl`}>{children}</h1>
   )
 }

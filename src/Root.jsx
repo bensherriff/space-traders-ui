@@ -4,6 +4,7 @@ import "./Root.css";
 import Login from "./components/Login";
 import { Storage } from "./js";
 import Header from "./components/Header";
+import Footer from "./components/Footer";
 
 export default function Root() {
   const [agent, setAgent] = useState({});
@@ -11,18 +12,21 @@ export default function Root() {
   useEffect(() => {
     var _agent = Storage.getAgent();
     setAgent(_agent);
-  }, [])
-
-  if (!agent.symbol) {
-    return <Login setAgent={setAgent} />
-  }
+  }, []);
 
   return (
     <>
-      <Header/>
-      <div className="mx-6">
-        <Outlet />
-      </div>
+      {!agent || !agent.symbol? (
+        <Login setAgent={setAgent} />
+      ):
+        <div className="min-h-screen flex flex-col">
+          <Header/>
+          <div className="mx-6 my-2">
+            <Outlet />
+          </div>
+          <Footer setAgent={setAgent} />
+        </div>
+      }
     </>
   );
 }

@@ -10,7 +10,7 @@ import SystemSVG from '../components/SystemSVG';
 
 export default function System() {
   const {systemId} = useParams();
-  const [system, setSystem] = useState({});
+  const [system, setSystem] = useState(null);
 
   useEffect(() => {
     get_system();
@@ -28,7 +28,7 @@ export default function System() {
 
   return (
     <div>
-      {system && system.type? (
+      {system? (
         <div className='select-none cursor-default'>
           <SystemHeader symbol={system.symbol} type={system.type}/>
           <div className='flex ml-6'>
@@ -46,7 +46,7 @@ export default function System() {
                     return (
                       <NavLink key={index} to={`/system/${systemId}/${waypoint.symbol}`}>
                         <div className={`block px-2 py-8 mb-1 mr-1 rounded-md bg-stone-900 hover:bg-stone-950 text-lg`}>
-                          <span className={`${colors.bgTW} ${colors.textTW} py-8 px-4 rounded-md`}>{Text.capitalize(waypoint.type)}</span>
+                          <span className={`${colors.bgTW} ${colors.textTW} p-3 rounded-md`}>{Text.capitalize(waypoint.type)}</span>
                           <span className='float-right'>{waypoint.symbol}</span>
                         </div>
                       </NavLink>
