@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { Storage, Text } from '../js';
 import { SystemMap } from '../components/Canvas';
 import { NavLink } from "react-router-dom";
-import LocationHeader from '../components/Location/LocationHeader';
+import { SystemHeader } from '../components/Location/LocationHeader';
+import Tag from '../components/Tag';
+import SystemSVG from '../components/SystemSVG';
 
 export default function System() {
   const {systemId} = useParams();
@@ -27,34 +29,36 @@ export default function System() {
   return (
     <div>
       {system && system.type? (
-        <div>
-          <LocationHeader symbol={system.symbol} type={system.type}/>
+        <div className='select-none cursor-default'>
+          <SystemHeader symbol={system.symbol} type={system.type}/>
+          <div className='flex ml-6'>
+            <span>Sector {system.sectorSymbol}</span>
+            <span className='pl-4'>({system.x},{system.y})</span>
+          </div>
           <hr className='mb-5'/>
-          <ul>
-            <li>Sector: {system.sectorSymbol}</li>
-            <li>Coordinates: ({system.x},{system.y})</li>
-          </ul>
-          {system.waypoints && Array.isArray(system.waypoints)? (
-            <div className='block p-4 shadow-md rounded-lg border bg-stone-800 border-stone-900'>
-              <h2 className='text-2xl text-center'>System Map</h2>
-              <hr/>
-              <div className='flex justify-between m-2'>
-                <ul className='block'>
-                  {system.waypoints.map((waypoint, index) => (
-                    <NavLink key={index} to={`/system/${systemId}/${waypoint.symbol}`}>
-                      <li className='block p-2 mb-2 bg-[#4b5563] hover:bg-[#2b3e58] shadow-md rounded-md select-none'>
-                        <span className='mr-4'>{Text.capitalize(waypoint.type)}</span>
-                        <span className='float-right'>{waypoint.symbol}</span>
-                      </li>
-                    </NavLink>
-                  ))}
-                </ul>
-                <div className='block ml-4 border-2 border-stone-500'>
-                  <SystemMap system={system}/>
-                </div>
-              </div>
+          <div className='flex justify-between'>
+            <div className='w-1/2'>
+              {system.waypoints? (
+                <>
+                  {system.waypoints.map((waypoint, index) => {
+                    let colors = Text.waypointTypeColor(waypoint.type);
+                    console.log(colors);
+                    return (
+                      <NavLink key={index} to={`/system/${systemId}/${waypoint.symbol}`}>
+                        <div className={`block px-2 py-8 mb-1 mr-1 rounded-md bg-stone-900 hover:bg-stone-950 text-lg`}>
+                          <span className={`${colors.bgTW} ${colors.textTW} py-8 px-4 rounded-md`}>{Text.capitalize(waypoint.type)}</span>
+                          <span className='float-right'>{waypoint.symbol}</span>
+                        </div>
+                      </NavLink>
+                    )
+                  })}
+                </>
+              ): <></>}
             </div>
-          ): <></>}
+            <div className='w-1/2'>
+              <SystemSVG system={system}/>
+            </div>
+          </div>
         </div>
       ): <></>}
     </div>

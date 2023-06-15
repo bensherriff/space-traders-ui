@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Storage, Text } from '../js';
 import Tag from '../components/Tag';
 import { NavLink } from "react-router-dom";
+import { WaypointHeader } from '../components/Location/LocationHeader';
 
 export default function Waypoint() {
   const {systemId, waypointId} = useParams();
@@ -29,7 +30,7 @@ export default function Waypoint() {
     <div>
       {waypoint && waypoint.type? (
         <div>
-          <h1 className='text-center text-4xl'>{waypoint.symbol} ({Text.capitalize(waypoint.type)})</h1>
+          <WaypointHeader symbol={waypoint.symbol} type={waypoint.type}/>
           <hr className='mb-5'/>
           <div className='w-full text-center mb-5'>
             {waypointTraits && Array.isArray(waypointTraits)? (
