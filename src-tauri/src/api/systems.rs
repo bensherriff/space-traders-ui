@@ -4,7 +4,7 @@ use tauri::State;
 
 use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, data::system::{insert_system, insert_waypoint}};
 
-use super::requests::{ResponseObject, get_request, handle_result};
+use super::{requests::{ResponseObject, get_request, handle_result, ErrorObject}, fleet::get_ships_at_waypoint};
 
 /// Return a list of all systems.
 #[tauri::command]
@@ -77,10 +77,25 @@ pub async fn get_waypoint(client: State<'_, Client>, pool: State<'_, Pool<Connec
 /// Imports can be sold, exports can be purchased, and exchange goods can be purchased or sold.
 /// Send a ship to the waypoint to access trade good prices and recent transactions.
 #[tauri::command]
-pub async fn get_market(client: State<'_, Client>, token: String, system: String, waypoint: String) -> Result<ResponseObject<Market>, ()> {
+pub async fn get_market(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, system: String, waypoint: String) -> Result<ResponseObject<Market>, ()> {
   let url = format!("/systems/{}/waypoints/{}/market", system, waypoint);
   let result = handle_result(get_request::<Market>(&client, token, url, None).await);
-  Ok(result)
+  match &result.data {
+    Some(data) => {
+      crate::data::system::insert_market(&pool, &waypoint, &data);
+      Ok(result)
+    },
+    None => {
+      match crate::data::system::get_market(&pool, &waypoint) {
+        Some(m) => {
+          Ok(ResponseObject { data: Some(m), error: None, meta: None })
+        }
+        None => {
+            Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Unable to update market data".to_string() }), meta: None })
+        }
+      }
+    }
+  }
 }
 
 /// Get the shipyard for a waypoint Send a ship to the waypoint to access ships that are

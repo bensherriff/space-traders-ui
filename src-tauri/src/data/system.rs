@@ -1,14 +1,16 @@
 use std::str::FromStr;
 
-use crate::data::models::{WaypointDB, NewWaypointDB, WaypointTraitDB, NewWaypointTraitDB, SystemWaypointDB, NewSystemWaypointDB};
+use crate::data::models::{WaypointDB, NewWaypointDB, WaypointTraitDB, NewWaypointTraitDB, SystemWaypointDB, NewSystemWaypointDB, MarketDB, MarketTransactionsDB, MarketTradeGoodsDB, NewMarketDB, NewMarketTradeGoodsDB, NewMarketTransactionsDB};
 use crate::models::SymbolResponse;
 use crate::models::chart::Chart;
+use crate::models::market::{Market, MarketItem, MarketItemType, TradeGood, SupplyType};
 use crate::models::system::{System, SystemWaypoint, SystemType};
 use crate::data::{models::{SystemDB, NewSystemDB}, schema};
 use crate::models::trait_type::TraitType;
+use crate::models::transaction::{Transaction, TransactionType};
 use crate::models::waypoint::{WaypointType, Waypoint, WaypointTrait};
 
-use diesel::prelude::*;
+use diesel::{prelude::*, insert_into, replace_into};
 use diesel::{RunQueryDsl, QueryDsl, insert_or_ignore_into, SqliteConnection, r2d2::{Pool, ConnectionManager}};
 
 pub fn get_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbol: &str) -> Option<System> {
@@ -82,7 +84,7 @@ pub fn get_system_waypoints(pool: &Pool<ConnectionManager<SqliteConnection>>, sy
   match result {
     Ok(w) => {
       let mut waypoints: Vec<SystemWaypoint> = vec![];
-      for (_index, item) in w.iter().enumerate() {
+      for item in w.iter() {
         waypoints.push(SystemWaypoint {
           symbol: item.waypoint_symbol.to_string(),
           waypoint_type: WaypointType::from_str(&item.waypoint_type).unwrap(),
@@ -273,4 +275,186 @@ pub fn insert_waypoint_trait(pool: &Pool<ConnectionManager<SqliteConnection>>, w
     .values(&_waypoint_trait)
     .execute(&mut connection)
     .expect("Error saving new waypoint trait");
+}
+
+pub fn get_market(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoint_symbol: &str) -> Option<Market> {
+  use schema::markets;
+  use schema::market_trade_goods;
+  use schema::market_transactions;
+
+  let mut connection = pool.get().unwrap();
+  let market_results: Result<Vec<MarketDB>, diesel::result::Error> = markets::table
+    .filter(markets::waypoint_symbol.eq(waypoint_symbol))
+    .select(MarketDB::as_select())
+    .load(&mut connection);
+  let mut imports: Vec<MarketItem> = vec![];
+  let mut exports: Vec<MarketItem> = vec![];
+  let mut exchange: Vec<MarketItem> = vec![];
+  match market_results {
+    Ok(r) => {
+      if r.len() == 0 as usize {
+        return None;
+      }
+      for item in r.iter() {
+        println!("{}", &item.symbol);
+        let market_item = MarketItem {
+          symbol: MarketItemType::from_str(&item.symbol).unwrap(),
+          name: item.name.to_string(),
+          description: item.description.to_string()
+        };
+        if item.market_type.eq("import") {
+          imports.push(market_item);
+        } else if item.market_type.eq("export") {
+          exports.push(market_item);
+        } else if item.market_type.eq("exchange") {
+          exchange.push(market_item);
+        }
+      }
+    }
+    Err(_err) => return None
+  };
+
+  let transaction_results: Result<Vec<MarketTransactionsDB>, diesel::result::Error> = market_transactions::table
+    .filter(market_transactions::waypoint_symbol.eq(waypoint_symbol))
+    .order(market_transactions::timestamp.desc())
+    .select(MarketTransactionsDB::as_select())
+    .load(&mut connection);
+  let mut transactions: Vec<Transaction> = vec![];
+  match transaction_results {
+    Ok(r) => {
+      for transaction in r.iter() {
+        transactions.push(Transaction {
+          waypoint_symbol: transaction.waypoint_symbol.to_string(),
+          ship_symbol: transaction.ship_symbol.to_string(),
+          trade_symbol: transaction.trade_symbol.to_string(),
+          transaction_type: TransactionType::from_str(&transaction.transaction_type).unwrap(),
+          units: transaction.units,
+          price_per_unit: transaction.price_per_unit,
+          total_price: transaction.total_price,
+          timestamp: transaction.timestamp.to_string()
+        });
+      }
+    }
+    Err(_err) => {}
+  };
+
+    let trade_good_results: Result<Vec<MarketTradeGoodsDB>, diesel::result::Error> = market_trade_goods::table
+    .filter(market_trade_goods::waypoint_symbol.eq(waypoint_symbol))
+    .select(MarketTradeGoodsDB::as_select())
+    .load(&mut connection);
+  let mut trade_goods: Vec<TradeGood> = vec![];
+  match trade_good_results {
+    Ok(r) => {
+      for trade_good in r.iter() {
+        trade_goods.push(TradeGood {
+          symbol: trade_good.symbol.to_string(),
+          trade_volume: trade_good.trade_volume,
+          supply_type: SupplyType::from_str(&trade_good.supply_type).unwrap(),
+          purchase_price: trade_good.purchase_price,
+          sell_price: trade_good.sell_price
+        });
+      }
+    }
+    Err(_err) => {}
+  };
+
+  Some(Market {
+    symbol: waypoint_symbol.to_string(),
+    exports,
+    imports,
+    exchange,
+    transactions: Some(transactions),
+    trade_goods: Some(trade_goods),
+  })
+}
+
+pub fn insert_market(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoint_symbol: &str, market: &Market) {
+  use schema::markets;
+  use schema::market_trade_goods;
+  use schema::market_transactions;
+
+  let mut connection = pool.get().unwrap();
+  for item in market.exports.iter() {
+    let _market_item = NewMarketDB {
+      waypoint_symbol,
+      market_type: "exports",
+      symbol: &item.symbol.to_string(),
+      name: &item.name,
+      description: &item.description,
+    };
+    replace_into(markets::table)
+      .values(_market_item)
+      .execute(&mut connection)
+      .expect("Error saving new markets");
+  }
+
+  for item in market.imports.iter() {
+    let _market_item = NewMarketDB {
+      waypoint_symbol,
+      market_type: "import",
+      symbol: &item.symbol.to_string(),
+      name: &item.name,
+      description: &item.description,
+    };
+    replace_into(markets::table)
+      .values(_market_item)
+      .execute(&mut connection)
+      .expect("Error saving new markets");
+  }
+
+  for item in market.exchange.iter() {
+    let _market_item = NewMarketDB {
+      waypoint_symbol,
+      market_type: "exchange",
+      symbol: &item.symbol.to_string(),
+      name: &item.name,
+      description: &item.description,
+    };
+    replace_into(markets::table)
+      .values(_market_item)
+      .execute(&mut connection)
+      .expect("Error saving new markets");
+  }
+
+  match &market.trade_goods {
+    Some(g) => {
+      for good in g.iter() {
+        let _good = NewMarketTradeGoodsDB {
+            waypoint_symbol,
+            symbol: &good.symbol,
+            trade_volume: good.trade_volume,
+            supply_type: &good.supply_type.to_string(),
+            purchase_price: good.purchase_price,
+            sell_price: good.sell_price,
+        };
+        replace_into(market_trade_goods::table)
+          .values(_good)
+          .execute(&mut connection)
+          .expect("Error saving new market goods");
+      }
+    }
+    None => {}
+  }
+
+  match &market.transactions {
+    Some(t) => {
+      for transaction in t.iter() {
+        let _transaction = NewMarketTransactionsDB {
+            waypoint_symbol,
+            ship_symbol: &transaction.ship_symbol,
+            trade_symbol: &transaction.trade_symbol,
+            transaction_type: &transaction.transaction_type.to_string(),
+            units: transaction.units,
+            price_per_unit: transaction.price_per_unit,
+            total_price: transaction.total_price,
+            timestamp: &transaction.timestamp,
+        };
+        replace_into(market_transactions::table)
+          .values(_transaction)
+          .execute(&mut connection)
+          .expect("Error saving new market transactions");
+      }
+    }
+    None => {}
+  }
 }

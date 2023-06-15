@@ -148,6 +148,41 @@ diesel::table! {
     factions -> Text,
   }
 }
+
+diesel::table! {
+  markets (waypoint_symbol, market_type, symbol, name, description) {
+    waypoint_symbol -> Text,
+    market_type -> Text,
+    symbol -> Text,
+    name -> Text,
+    description -> Text,
+  }
+}
+
+diesel::table! {
+  market_trade_goods (waypoint_symbol, symbol) {
+    waypoint_symbol -> Text,
+    symbol -> Text,
+    trade_volume -> Integer,
+    supply_type -> Text,
+    purchase_price -> Integer,
+    sell_price -> Integer,
+  }
+}
+
+diesel::table! {
+  market_transactions (waypoint_symbol, ship_symbol, trade_symbol, transaction_type, units, price_per_unit, total_price, timestamp) {
+    waypoint_symbol -> Text,
+    ship_symbol -> Text,
+    trade_symbol -> Text,
+    transaction_type -> Text,
+    units -> Integer,
+    price_per_unit -> Integer,
+    total_price -> Integer,
+    timestamp -> Text,
+  }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
   fleet,
   fleet_modules,
@@ -157,4 +192,7 @@ diesel::allow_tables_to_appear_in_same_query!(
   system_waypoints,
   waypoints,
   waypoint_traits,
+  market_transactions,
+  market_trade_goods,
+  markets,
 );

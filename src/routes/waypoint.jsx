@@ -293,7 +293,7 @@ function Marketplace({systemId, waypointId, ship}) {
           ): <></>}
           {market.transactions && Array.isArray(market.transactions)? (
             <>
-              <h2 onClick={toggleTransactions} className='text-center text-lg cursor-pointer select-none'>Transactions</h2>
+              <h2 onClick={toggleTransactions} className='text-center text-lg cursor-pointer select-none'>Latest Transactions</h2>
               <table hidden={!transactionsToggle} className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
                 <thead className='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
                   <tr>

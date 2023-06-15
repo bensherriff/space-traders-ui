@@ -152,12 +152,16 @@ pub async fn jettison_cargo(client: State<'_, Client>, token: String, symbol: St
 /// When used while in orbit or docked to a jump gate waypoint, any ship can use this command.
 /// When used elsewhere, jumping requires a jump drive unit and consumes a unit of antimatter (which needs to be in your cargo).
 #[tauri::command]
-pub async fn jump_ship(client: State<'_, Client>, token: String, symbol: String, system: String) -> Result<ResponseObject<ShipJumpResponse>, ()> {
+pub async fn jump_ship(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String, symbol: String, system: String) -> Result<ResponseObject<ShipJumpResponse>, ()> {
   let url = format!("/my/ships/{}/jump", symbol);
   let body = serde_json::json!({
     "systemSymbol": system
   });
   let result = handle_result(post_request::<ShipJumpResponse>(&client, token, url, Some(body.to_string())).await);
+  match &result.data {
+    Some(data) => crate::data::fleet::update_ship_navigation(&pool, &symbol, &data.nav),
+    None => {}
+  };
   Ok(result)
 }
 

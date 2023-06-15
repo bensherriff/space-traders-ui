@@ -295,3 +295,71 @@ pub struct NewWaypointTraitDB<'a> {
   pub name: &'a str,
   pub description: &'a str,
 }
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::data::schema::markets)]
+pub struct MarketDB {
+  pub waypoint_symbol: String,
+  pub market_type: String,
+  pub symbol: String,
+  pub name: String,
+  pub description: String,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::data::schema::markets)]
+pub struct NewMarketDB<'a> {
+  pub waypoint_symbol: &'a str,
+  pub market_type: &'a str,
+  pub symbol: &'a str,
+  pub name: &'a str,
+  pub description: &'a str,
+}
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::data::schema::market_trade_goods)]
+pub struct MarketTradeGoodsDB {
+  pub waypoint_symbol: String,
+  pub symbol: String,
+  pub trade_volume: i32,
+  pub supply_type: String,
+  pub purchase_price: i32,
+  pub sell_price: i32,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::data::schema::market_trade_goods)]
+pub struct NewMarketTradeGoodsDB<'a> {
+  pub waypoint_symbol: &'a str,
+  pub symbol: &'a str,
+  pub trade_volume: i32,
+  pub supply_type: &'a str,
+  pub purchase_price: i32,
+  pub sell_price: i32,
+}
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::data::schema::market_transactions)]
+pub struct MarketTransactionsDB {
+  pub waypoint_symbol: String,
+  pub ship_symbol: String,
+  pub trade_symbol: String,
+  pub transaction_type: String,
+  pub units: i32,
+  pub price_per_unit: i32,
+  pub total_price: i32,
+  pub timestamp: String,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::data::schema::market_transactions)]
+pub struct NewMarketTransactionsDB<'a> {
+  pub waypoint_symbol: &'a str,
+  pub ship_symbol: &'a str,
+  pub trade_symbol: &'a str,
+  pub transaction_type: &'a str,
+  pub units: i32,
+  pub price_per_unit: i32,
+  pub total_price: i32,
+  pub timestamp: &'a str,
+}

@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use super::{agent::Agent, ship::cargo::Cargo};
@@ -6,19 +6,19 @@ use super::{agent::Agent, ship::cargo::Cargo};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Transaction {
   #[serde(rename = "waypointSymbol")]
-  pub waypoint_symbol: Option<String>,
+  pub waypoint_symbol: String,
   #[serde(rename = "shipSymbol")]
   pub ship_symbol: String,
   #[serde(rename = "tradeSymbol")]
   pub trade_symbol: String,
   #[serde(rename = "type")]
-  pub transaction_type: Option<TransactionType>,
-  pub units: u64,
+  pub transaction_type: TransactionType,
+  pub units: i32,
   #[serde(rename = "pricePerUnit")]
-  pub price_per_unit: Option<u64>,
+  pub price_per_unit: i32,
   #[serde(rename = "totalPrice")]
-  pub total_price: Option<u64>,
-  pub timestamp: Option<String>
+  pub total_price: i32,
+  pub timestamp: String
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,6 +35,18 @@ impl Display for TransactionType {
       TransactionType::Purchase => write!(f, "Purchase"),
       TransactionType::Sell => write!(f, "Sell"),
     }
+  }
+}
+
+impl FromStr for TransactionType {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Purchase" => Ok(TransactionType::Purchase),
+        "Sell" => Ok(TransactionType::Sell),
+        _ => Err(())
+      }
   }
 }
 

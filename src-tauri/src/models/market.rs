@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 
 use serde::{Serialize, Deserialize};
 
@@ -19,13 +19,13 @@ pub struct Market {
 pub struct TradeGood {
   pub symbol: String,
   #[serde(rename = "tradeVolume")]
-  pub trade_volume: u64,
+  pub trade_volume: i32,
   #[serde(rename = "supply")]
   pub supply_type: SupplyType,
   #[serde(rename = "purchasePrice")]
-  pub purchase_price: u64,
+  pub purchase_price: i32,
   #[serde(rename = "sellPrice")]
-  pub sell_price: u64
+  pub sell_price: i32
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -48,6 +48,20 @@ impl Display for SupplyType {
       SupplyType::Moderate => write!(f, "Moderate"),
       SupplyType::Abundant => write!(f, "Abundant"),
     }
+  }
+}
+
+impl FromStr for SupplyType {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Scarce" => Ok(SupplyType::Scarce),
+        "Limited" => Ok(SupplyType::Limited),
+        "Moderate" => Ok(SupplyType::Moderate),
+        "Abundant" => Ok(SupplyType::Abundant),
+        _ => Err(())
+      }
   }
 }
 
@@ -363,7 +377,7 @@ impl Display for MarketItemType {
         MarketItemType::EngineIonDriveI => write!(f, "Ion Drive I Engine"),
         MarketItemType::EngineIonDriveII => write!(f, "Ion Drive II Engine"),
         MarketItemType::EngineHyperDriveI => write!(f, "Hyper Drive I Engine"),
-        MarketItemType::ModuleMineralProcessorI => write!(f, "Mineral ProcessorI"),
+        MarketItemType::ModuleMineralProcessorI => write!(f, "Mineral Processor I"),
         MarketItemType::ModuleCargoHoldI => write!(f, "Cargo Hold I"),
         MarketItemType::ModuleCrewQuartersI => write!(f, "Crew Quarters I"),
         MarketItemType::ModuleEnvoyQuartersI => write!(f, "Envoy Quarters I"),
@@ -396,5 +410,125 @@ impl Display for MarketItemType {
         MarketItemType::MountMissileLauncherI => write!(f, "Missile Launcher I"),
         MarketItemType::MountTurretI => write!(f, "Turret I"),
     }
+  }
+}
+
+impl FromStr for MarketItemType {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Precious Stones" => Ok(MarketItemType::PreciousStones),
+        "Quartz Sand" => Ok(MarketItemType::QuartzSand),
+        "Silicon Crystals" => Ok(MarketItemType::SiliconCrystals),
+        "Ammonia Ice" => Ok(MarketItemType::AmmoniaIce),
+        "Liquid Hydrogen" => Ok(MarketItemType::LiquidHydrogen),
+        "Liquid Nitrogen" => Ok(MarketItemType::LiquidNitrogen),
+        "Ice Water" => Ok(MarketItemType::IceWater),
+        "Exotic Matter" => Ok(MarketItemType::ExoticMatter),
+        "Advanced Circuitry" => Ok(MarketItemType::AdvancedCircuitry),
+        "Graviton Emitters" => Ok(MarketItemType::GravitonEmitters),
+        "Iron" => Ok(MarketItemType::Iron),
+        "Iron Ore" => Ok(MarketItemType::IronOre),
+        "Copper" => Ok(MarketItemType::Copper),
+        "Copper Ore" => Ok(MarketItemType::CopperOre),
+        "Aluminum" => Ok(MarketItemType::Aluminum),
+        "Aluminum Ore" => Ok(MarketItemType::AluminumOre),
+        "Silver" => Ok(MarketItemType::Silver),
+        "Silver Ore" => Ok(MarketItemType::SilverOre),
+        "Gold" => Ok(MarketItemType::Gold),
+        "Gold Ore" => Ok(MarketItemType::GoldOre),
+        "Platinum" => Ok(MarketItemType::Platinum),
+        "Platinum Ore" => Ok(MarketItemType::PlatinumOre),
+        "Diamonds" => Ok(MarketItemType::Diamonds),
+        "Uranite" => Ok(MarketItemType::Uranite),
+        "Uranite Ore" => Ok(MarketItemType::UraniteOre),
+        "Meritium" => Ok(MarketItemType::Meritium),
+        "Meritium Ore" => Ok(MarketItemType::MeritiumOre),
+        "Hydrocarbon" => Ok(MarketItemType::Hydrocarbon),
+        "Antimatter" => Ok(MarketItemType::Antimatter),
+        "Fertilizers" => Ok(MarketItemType::Fertilizers),
+        "Fabrics" => Ok(MarketItemType::Fabrics),
+        "Food" => Ok(MarketItemType::Food),
+        "Jewelry" => Ok(MarketItemType::Jewelry),
+        "Machinery" => Ok(MarketItemType::Machinery),
+        "Firearms" => Ok(MarketItemType::Firearms),
+        "Assault Rifles" => Ok(MarketItemType::AssaultRifles),
+        "Military Equipment" => Ok(MarketItemType::MilitaryEquipment),
+        "Explosives" => Ok(MarketItemType::Explosives),
+        "Lab Instruments" => Ok(MarketItemType::LabInstruments),
+        "Ammunition" => Ok(MarketItemType::Ammunition),
+        "Electronics" => Ok(MarketItemType::Electronics),
+        "Ship Plating" => Ok(MarketItemType::ShipPlating),
+        "Equipment" => Ok(MarketItemType::Equipment),
+        "Fuel" => Ok(MarketItemType::Fuel),
+        "Medicine" => Ok(MarketItemType::Medicine),
+        "Drugs" => Ok(MarketItemType::Drugs),
+        "Clothing" => Ok(MarketItemType::Clothing),
+        "Microprocessors" => Ok(MarketItemType::Microprocessors),
+        "Plastics" => Ok(MarketItemType::Plastics),
+        "Poly Neucleotides" => Ok(MarketItemType::PolyNeucleotides),
+        "Bio Composites" => Ok(MarketItemType::BioComposites),
+        "Nanobots" => Ok(MarketItemType::Nanobots),
+        "Ai Mainframes" => Ok(MarketItemType::AiMainframes),
+        "Quantum Drives" => Ok(MarketItemType::QuantumDrives),
+        "Robotic Drones" => Ok(MarketItemType::RoboticDrones),
+        "Cyber Implants" => Ok(MarketItemType::CyberImplants),
+        "Gene Therapeutics" => Ok(MarketItemType::GeneTherapeutics),
+        "Neural Chips" => Ok(MarketItemType::NeuralChips),
+        "Mood Regulators" => Ok(MarketItemType::MoodRegulators),
+        "Viral Agents" => Ok(MarketItemType::ViralAgents),
+        "Microfusion Generators" => Ok(MarketItemType::MicrofusionGenerators),
+        "Super Grains" => Ok(MarketItemType::SuperGrains),
+        "Laser Rifles" => Ok(MarketItemType::LaserRifles),
+        "Holographics" => Ok(MarketItemType::Holographics),
+        "Ship Salvage" => Ok(MarketItemType::ShipSalvage),
+        "Relic Tech" => Ok(MarketItemType::RelicTech),
+        "Novel Lifeforms" => Ok(MarketItemType::NovelLifeforms),
+        "Botanical Specimens" => Ok(MarketItemType::BotanicalSpecimens),
+        "Cultural Artifacts" => Ok(MarketItemType::CulturalArtifacts),
+        "Solar I Reactor" => Ok(MarketItemType::ReactorSolarI),
+        "Fusion I Reactor" => Ok(MarketItemType::ReactorFusionI),
+        "Fission I Reactor" => Ok(MarketItemType::ReactorFissionI),
+        "Chemical I Reactor" => Ok(MarketItemType::ReactorChemicalI),
+        "Antimatter I Reactor" => Ok(MarketItemType::ReactorAntimatterI),
+        "Impulse Drive I Engine" => Ok(MarketItemType::EngineImpulseDriveI),
+        "Ion Drive I Engine" => Ok(MarketItemType::EngineIonDriveI),
+        "Ion Drive II Engine" => Ok(MarketItemType::EngineIonDriveII),
+        "Hyper Drive I Engine" => Ok(MarketItemType::EngineHyperDriveI),
+        "Mineral Processor I" => Ok(MarketItemType::ModuleMineralProcessorI),
+        "Cargo Hold I" => Ok(MarketItemType::ModuleCargoHoldI),
+        "Crew Quarters I" => Ok(MarketItemType::ModuleCrewQuartersI),
+        "Envoy Quarters I" => Ok(MarketItemType::ModuleEnvoyQuartersI),
+        "Passenger Cabin I" => Ok(MarketItemType::ModulePassengerCabinI),
+        "Micro Refinery I" => Ok(MarketItemType::ModuleMicroRefineryI),
+        "Ore Refinery I" => Ok(MarketItemType::ModuleOreRefineryI),
+        "Fuel Refinery I" => Ok(MarketItemType::ModuleFuelRefineryI),
+        "Science Lab I" => Ok(MarketItemType::ModuleScienceLabI),
+        "Jump Drive I" => Ok(MarketItemType::ModuleJumpDriveI),
+        "Jump Drive II" => Ok(MarketItemType::ModuleJumpDriveII),
+        "Jump Drive III" => Ok(MarketItemType::ModuleJumpDriveIII),
+        "Warp Drive I" => Ok(MarketItemType::ModuleWarpDriveI),
+        "Warp Drive II" => Ok(MarketItemType::ModuleWarpDriveII),
+        "Warp Drive III" => Ok(MarketItemType::ModuleWarpDriveIII),
+        "Shield Generator I" => Ok(MarketItemType::ModuleShieldGeneratorI),
+        "Shield Generator II" => Ok(MarketItemType::ModuleShieldGeneratorII),
+        "Gas Siphon I" => Ok(MarketItemType::MountGasSiphonI),
+        "Gas Siphon II" => Ok(MarketItemType::MountGasSiphonII),
+        "Gas Siphon III" => Ok(MarketItemType::MountGasSiphonIII),
+        "Surveyor I" => Ok(MarketItemType::MountSurveyorI),
+        "Surveyor II" => Ok(MarketItemType::MountSurveyorII),
+        "Surveyor III" => Ok(MarketItemType::MountSurveyorIII),
+        "Sensor Array I" => Ok(MarketItemType::MountSensorArrayI),
+        "Sensor Array II" => Ok(MarketItemType::MountSensorArrayII),
+        "Sensor Array III" => Ok(MarketItemType::MountSensorArrayIII),
+        "Mining Laser I" => Ok(MarketItemType::MountMiningLaserI),
+        "Mining Laser II" => Ok(MarketItemType::MountMiningLaserII),
+        "Mining Laser III" => Ok(MarketItemType::MountMiningLaserIII),
+        "Laser Cannon I" => Ok(MarketItemType::MountLaserCannonI),
+        "Missile Launcher I" => Ok(MarketItemType::MountMissileLauncherI),
+        "Turret I" => Ok(MarketItemType::MountTurretI),
+        _ => Err(())
+      }
   }
 }

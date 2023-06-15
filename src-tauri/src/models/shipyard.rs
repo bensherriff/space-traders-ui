@@ -17,8 +17,8 @@ pub struct ShipyardTransaction {
   pub waypoint_symbol: String,
   #[serde(rename = "shipSymbol")]
   pub ship_symbol: String,
-  pub price: u64,
+  pub price: i32,
   #[serde(rename = "agentSymbol")]
   pub agent_symbol: String,
-  pub timestamp: Option<String>
+  pub timestamp: String
 }
