@@ -7,6 +7,7 @@ import Tag from '../components/Tag';
 import { NavLink } from "react-router-dom";
 import { WaypointHeader } from '../components/Location/LocationHeader';
 import { Button } from '../components';
+import ShipAutoComplete from '../components/Form/ShipAutoComplete';
 
 export default function Waypoint() {
   const {systemId, waypointId} = useParams();
@@ -17,11 +18,11 @@ export default function Waypoint() {
   const [jumpGateToggle, setJumpGateToggle] = useState(false);
   const [ships, setShips] = useState({});
   const [localShips, setLocalShips] = useState([]);
+  const [localQuery, setLocalQuery] = useState("");
   const [currentShip, setCurrentShip] = useState(null);
-  const [currentShipSymbol, setCurrentShipSymbol] = useState("");
   const [otherShips, setOtherShips] = useState([]);
+  const [otherQuery, setOtherQuery] = useState("");
   const [otherShip, setOtherShip] = useState(null);
-  const [otherShipSymbol, setOtherShipSymbol] = useState("");
 
   useEffect(() => {
     get_waypoint();
@@ -55,7 +56,6 @@ export default function Waypoint() {
             setLocalShips(res.data);
             if (res.data.length > 0) {
               setCurrentShip(res.data[0]);
-              setCurrentShipSymbol(res.data[0].symbol);
               // Other ships
               let _otherShips = Object.values(_ships).filter(object1 => {
                 return !res.data.some(object2 => {
@@ -65,19 +65,15 @@ export default function Waypoint() {
               setOtherShips(_otherShips);
               if (_otherShips.length > 0) {
                 setOtherShip(_otherShips[0]);
-                setOtherShipSymbol(_otherShips[0].symbol);
               }
             } else {
               setLocalShips([]);
               setCurrentShip(null);
-              setCurrentShipSymbol("");
               setOtherShips(response.data);
               if (response.data.length > 0) {
                 setOtherShip(response.data[0]);
-                setOtherShipSymbol(response.data[0].symbol);
               } else {
                 setOtherShip(null);
-                setOtherShipSymbol("");
               }
             }
           } else if (res && res.error) {
@@ -161,38 +157,14 @@ export default function Waypoint() {
             <div className='w-full h-full'>
               {currentShip? (
                 <>
-                  <form
-                    className='text-center'
-                  >
-                    <select value={currentShipSymbol} onChange={(e) => {
-                      setCurrentShipSymbol(e.target.value);
-                      setCurrentShip(ships[e.target.value]);
-                    }} className='text-xl text-white bg-[#2f2f2f]'>
-                      {localShips.map((ship, index) => (
-                        <option key={index} value={ship.symbol}>{ship.symbol}</option>
-                      ))}
-                    </select>
-                  </form>
-                  <hr/>
+                  <ShipAutoComplete ships={localShips} selectedShip={currentShip} setSelectedShip={setCurrentShip} />
                   <NavLink to={`/fleet/${currentShip.symbol}`}>Ship Info</NavLink>
                 </>
               ): <></>}
               {otherShip? (
                 <div>
                   other ships
-                  <form
-                      className='text-center'
-                    >
-                      <select value={otherShipSymbol} onChange={(e) => {
-                        setOtherShipSymbol(e.target.value);
-                        setOtherShip(ships[e.target.value]);
-                      }} className='text-xl text-white bg-[#2f2f2f]'>
-                        {otherShips.map((ship, index) => (
-                          <option key={index} value={ship.symbol}>{ship.symbol}</option>
-                        ))}
-                      </select>
-                    </form>
-                    <hr/>
+                    <ShipAutoComplete ships={otherShips} selectedShip={otherShip} setSelectedShip={setOtherShip}/>
                     <NavLink to={`/fleet/${otherShip.symbol}`}>Ship Info</NavLink>
                 </div>
               ): <></>}
