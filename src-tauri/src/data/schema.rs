@@ -140,6 +140,7 @@ diesel::table! {
 
 diesel::table! {
   systems (system_symbol) {
+    rowid -> Integer,
     system_symbol -> Text,
     sector_symbol -> Text,
     system_type -> Text,

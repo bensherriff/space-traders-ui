@@ -56,7 +56,8 @@ pub fn init(pool: &Pool<ConnectionManager<SqliteConnection>>, app: &mut App) {
 pub struct ConnectionOptions {
   pub enable_wal: bool,
   pub enable_foreign_keys: bool,
-  pub busy_timeout: Option<Duration>
+  pub busy_timeout: Option<Duration>,
+  pub default_cache_size: i32
 }
 
 impl CustomizeConnection<SqliteConnection, diesel::r2d2::Error> for ConnectionOptions {
@@ -71,6 +72,7 @@ impl CustomizeConnection<SqliteConnection, diesel::r2d2::Error> for ConnectionOp
       if let Some(d) = self.busy_timeout {
         conn.batch_execute(&format!("PRAGMA busy_timeout = {};", d.as_millis()))?;
       }
+      conn.batch_execute(&format!("PRAGMA default_cache_size = {};", self.default_cache_size))?;
       Ok(())
     })()
     .map_err(diesel::r2d2::Error::QueryError)
@@ -84,7 +86,8 @@ pub fn connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
     .connection_customizer(Box::new(ConnectionOptions {
       enable_wal: true,
       enable_foreign_keys: true,
-      busy_timeout: Some(Duration::from_secs(30))
+      busy_timeout: Some(Duration::from_secs(30)),
+      default_cache_size: 8000
     }))
     .build(manager)
     .unwrap()

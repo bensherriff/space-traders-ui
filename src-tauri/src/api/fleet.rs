@@ -235,11 +235,11 @@ pub async fn warp_ship(client: State<'_, Client>, pool: State<'_, Pool<Connectio
 
 /// Sell cargo.
 #[tauri::command]
-pub async fn sell_cargo(client: State<'_, Client>, token: String, symbol: String, item: CargoItem) -> Result<ResponseObject<TransactionResponse>, ()> {
+pub async fn sell_cargo(client: State<'_, Client>, token: String, symbol: String, item_symbol: String, units: i32) -> Result<ResponseObject<TransactionResponse>, ()> {
   let url = format!("/my/ships/{}/sell", symbol);
   let body = serde_json::json!({
-    "symbol": item.symbol,
-    "units": item.units
+    "symbol": item_symbol,
+    "units": units
   });
   let result = handle_result(post_request::<TransactionResponse>(&client, token, url, Some(body.to_string())).await);
   Ok(result)
@@ -279,11 +279,11 @@ pub async fn refuel_ship(client: State<'_, Client>, token: String, symbol: Strin
 
 /// Purchase cargo.
 #[tauri::command]
-pub async fn purchase_cargo(client: State<'_, Client>, token: String, symbol: String, item: CargoItem) -> Result<ResponseObject<TransactionResponse>, ()> {
+pub async fn purchase_cargo(client: State<'_, Client>, token: String, symbol: String, item_symbol: String, units: i32) -> Result<ResponseObject<TransactionResponse>, ()> {
   let url = format!("/my/ships/{}/purchase", symbol);
   let body = serde_json::json!({
-    "symbol": item.symbol,
-    "units": item.units
+    "symbol": item_symbol,
+    "units": units
   });
   let result = handle_result(post_request::<TransactionResponse>(&client, token, url, Some(body.to_string())).await);
   Ok(result)

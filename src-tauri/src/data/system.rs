@@ -10,6 +10,7 @@ use crate::models::trait_type::TraitType;
 use crate::models::transaction::{Transaction, TransactionType};
 use crate::models::waypoint::{WaypointType, Waypoint, WaypointTrait};
 
+use diesel::dsl::{count_star};
 use diesel::{prelude::*, replace_into};
 use diesel::{RunQueryDsl, QueryDsl, insert_or_ignore_into, SqliteConnection, r2d2::{Pool, ConnectionManager}};
 
@@ -42,12 +43,36 @@ pub fn get_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbo
     }
 }
 
-pub fn get_all_systems(pool: &Pool<ConnectionManager<SqliteConnection>>) -> Vec<System> {
+pub fn get_systems_count(pool: &Pool<ConnectionManager<SqliteConnection>>) -> i64 {
   use schema::systems;
+
+  let mut connection = pool.get().unwrap();
+  let result: Result<i64, diesel::result::Error> = systems::table
+    .select(count_star())
+    .get_result(&mut connection);
+  match result {
+    Ok(r) => r,
+    Err(_err) => 0
+  }
+}
+
+pub fn get_all_systems(pool: &Pool<ConnectionManager<SqliteConnection>>, min: Option<i32>, max: Option<i32>) -> Vec<System> {
+  use schema::systems;
+
+  let min_id = match min {
+    Some(id) => id,
+    None => 1
+  };
+  let max_id = match max {
+    Some(id) => id,
+    None => i32::MAX
+  };
 
   let mut connection = pool.get().unwrap();
   let result: Result<Vec<SystemDB>, diesel::result::Error> = systems::table
     .select(SystemDB::as_select())
+    .filter(systems::rowid.ge(min_id).and(systems::rowid.le(max_id)))
+    .order(systems::rowid.asc())
     .load(&mut connection);
   match result {
       Ok(r) => {

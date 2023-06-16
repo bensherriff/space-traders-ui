@@ -32,7 +32,8 @@ export default function Waypoint() {
       if (response && response.data) {
         setWaypoint(response.data);
         setWaypointTraits(response.data.traits);
-        setMarketToggle(response.data.traits.some(trait => trait.symbol === 'MARKETPLACE'))
+        setMarketToggle(response.data.traits.some(trait => trait.symbol === 'MARKETPLACE'));
+        setJumpGateToggle(response.data.type == 'JUMP_GATE');
       } else if (response && response.error) {
         console.error(response.error);
       }
@@ -102,7 +103,7 @@ export default function Waypoint() {
     <div>
       {waypoint? (
         <div>
-          <WaypointHeader symbol={waypoint.symbol} type={waypoint.type} faction={waypoint.faction.symbol}/>
+          <WaypointHeader waypoint={waypoint}/>
           <div className='flex ml-6 cursor-default select-none'>
             <NavLink to={`/system/${systemId}`}><span>System {systemId}</span></NavLink>
             <span className='pl-4'>({waypoint.x},{waypoint.y})</span>
@@ -335,6 +336,29 @@ function MarketAction({good, ship}) {
   useEffect(() => {
   }, [ship]);
 
+  async function handleAction() {
+    console.log(marketAction, amount);
+    if (marketAction == 'buy') {
+      invoke("purchase_cargo", { token: Storage.getToken(), symbol: ship.symbol, itemSymbol: good.symbol, units: amount}).then((response) => {
+        if (response && response.data) {
+          console.log(response.data);
+        } else if (response && response.error) {
+          console.error(response.error.message);
+        }
+      });
+    } else if (marketAction == 'sell') {
+      invoke("sell_cargo", { token: Storage.getToken(), symbol: ship.symbol, itemSymbol: good.symbol, units: amount}).then((response) => {
+        if (response && response.data) {
+          console.log(response.data);
+        } else if (response && response.error) {
+          console.error(response.error.message);
+        }
+      });
+    } else if (marketAction == 'sellAll') {
+      
+    }
+  }
+
   return (
     <tbody>
       <tr className='bg-white border-b dark:bg-gray-800 dark:border-gray-700'>
@@ -350,7 +374,7 @@ function MarketAction({good, ship}) {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                console.log(marketAction, amount);
+                handleAction();
               }}
             >
               <select value={marketAction} onChange={(e) => setMarketAction(e.target.value)} className='mx-1 p-1 rounded text-white bg-gray-700'>

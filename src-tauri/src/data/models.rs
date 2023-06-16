@@ -2,8 +2,8 @@ use diesel::prelude::*;
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = crate::data::schema::systems)]
-// #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct SystemDB {
+  pub rowid: i32,
   pub system_symbol: String,
   pub sector_symbol: String,
   pub system_type: String,

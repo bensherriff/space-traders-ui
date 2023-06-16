@@ -38,6 +38,27 @@ export function setToken(token) {
   setLocalStorage("token", token);
 }
 
+export function getSystems() {
+  const systems = getLocalStorage("systems");
+  if (!systems) {
+    return {};
+  }
+  return JSON.parse(systems);
+}
+
+export function hasSystems() {
+  const systems = getLocalStorage("systems");
+  if (systems) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export function setSystems(systems) {
+  setLocalStorage("systems", JSON.stringify(systems));
+}
+
 export function getLocalStorage(key) {
   return localStorage.getItem(key);
 }

@@ -2,7 +2,6 @@ use core::time;
 use std::thread;
 
 use diesel::{SqliteConnection, r2d2::{ConnectionManager, Pool}};
-use log::info;
 use reqwest::Client;
 use tauri::State;
 
@@ -33,16 +32,19 @@ pub async fn list_systems(client: State<'_, Client>, pool: State<'_, Pool<Connec
 
 #[tauri::command]
 pub async fn load_all_systems(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String) -> Result<ResponseObject<Vec<System>>, ()> {
-  info!("load_all_systems");
+  let systems_count = crate::data::system::get_systems_count(&pool);
+
   let limit: u64 = 20;
   let _client = client.to_owned();
   let _pool = pool.to_owned();
   let _token = token.to_owned();
+  let mut total_records = 0;
   let result = list_systems(_client, _pool, _token, limit, 1).await;
   let max_page = match &result {
     Ok(r) => {
       match &r.meta {
         Some(d) => {
+          total_records = d.total;
           (d.total as f64 / limit as f64).ceil() as u64
         }
         None => 2
@@ -50,34 +52,43 @@ pub async fn load_all_systems(client: State<'_, Client>, pool: State<'_, Pool<Co
     }
     Err(_err) => 2
   };
-  println!("max pages {}", max_page);
-  for page in 2..max_page {
-    let mut attempts = 3;
-    while attempts > 0 {
-      let _client = client.to_owned();
-      let _pool = pool.to_owned();
-      let _token = token.to_owned();
-      let result = list_systems(_client, _pool, _token, limit, page).await;
-      match result {
-        Ok(r) => {
-          match &r.error {
-            Some(error) => {
-              println!("{:#?}", &error);
-              if error.code == 429 && attempts > 0 {
-                thread::sleep(time::Duration::from_secs(1));
-                attempts = attempts - 1;
-              } else {
-                break;
+
+  if (systems_count as u64) < total_records {
+    for page in 1..(max_page + 1) {
+      let mut attempts = 3;
+      while attempts > 0 {
+        let _client = client.to_owned();
+        let _pool = pool.to_owned();
+        let _token = token.to_owned();
+        let result = list_systems(_client, _pool, _token, limit, page).await;
+        match result {
+          Ok(r) => {
+            match &r.error {
+              Some(error) => {
+                if error.code == 429 && attempts > 0 {
+                  thread::sleep(time::Duration::from_secs(1));
+                  attempts = attempts - 1;
+                } else {
+                  break;
+                }
               }
+              None => break
             }
-            None => break
           }
-        }
-        Err(_err) => {}
-      }; 
+          Err(_err) => {}
+        }; 
+      }
     }
+    let mut systems: Vec<System> = vec![];
+    systems.append(&mut crate::data::system::get_all_systems(&pool, None, None));
+    Ok(ResponseObject { data: Some(systems), error: None, meta: None })
+  } else {
+    let mut systems: Vec<System> = vec![];
+    for i in (1..systems_count).step_by(1000) {
+      systems.append(&mut crate::data::system::get_all_systems(&pool, Some(i as i32), Some((i + 999) as i32)));
+    }
+    Ok(ResponseObject { data: Some(systems), error: None, meta: None })
   }
-  Ok(ResponseObject { data: Some(crate::data::system::get_all_systems(&pool)), error: None, meta: None })
 }
 
 /// Get the details of a system.
@@ -97,6 +108,10 @@ pub async fn get_system(client: State<'_, Client>, pool: State<'_, Pool<Connecti
       Ok(result)
     }
   }
+}
+
+pub async fn get_path_between_systems(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, start_system: String, end_system: String) -> Result<ResponseObject<Vec<System>>, ()> {
+  Ok(ResponseObject { data: None, error: None, meta: None })
 }
 
 /// Return a list of all waypoints.
