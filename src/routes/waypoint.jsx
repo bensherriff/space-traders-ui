@@ -1,7 +1,8 @@
 import {useParams} from 'react-router-dom';
+import { useRecoilState} from "recoil";
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from 'react';
-import { Storage, Text } from '../js';
+import { Storage, Text, State } from '../js';
 import Tag from '../components/Tag';
 import { NavLink } from "react-router-dom";
 import { WaypointHeader } from '../components/Location/LocationHeader';
@@ -330,11 +331,14 @@ function Marketplace({systemId, waypointId, ship}) {
 }
 
 function MarketAction({good, ship}) {
+  const [agent, setAgent] = useRecoilState(State.agentState);
   const [marketAction, setMarketAction] = useState("buy");
+  const [errorMessage, setErrorMessage] = useState("");
   const [amount, setAmount] = useState();
-
+  
   useEffect(() => {
-  }, [ship]);
+    setErrorMessage("");
+  }, [amount, marketAction]);
 
   async function handleAction() {
     console.log(marketAction, amount);
@@ -342,16 +346,20 @@ function MarketAction({good, ship}) {
       invoke("purchase_cargo", { token: Storage.getToken(), symbol: ship.symbol, itemSymbol: good.symbol, units: amount}).then((response) => {
         if (response && response.data) {
           console.log(response.data);
+          setAgent(response.data.agent);
         } else if (response && response.error) {
           console.error(response.error.message);
+          setErrorMessage(response.error.message);
         }
       });
     } else if (marketAction == 'sell') {
       invoke("sell_cargo", { token: Storage.getToken(), symbol: ship.symbol, itemSymbol: good.symbol, units: amount}).then((response) => {
         if (response && response.data) {
           console.log(response.data);
+          setAgent(response.data.agent);
         } else if (response && response.error) {
           console.error(response.error.message);
+          setErrorMessage(response.error.message);
         }
       });
     } else if (marketAction == 'sellAll') {
@@ -376,54 +384,29 @@ function MarketAction({good, ship}) {
                 e.preventDefault();
                 handleAction();
               }}
+              className=''
             >
-              <select value={marketAction} onChange={(e) => setMarketAction(e.target.value)} className='mx-1 p-1 rounded text-white bg-gray-700'>
+              <select value={marketAction} onChange={(e) => setMarketAction(e.target.value)} className='mx-1 mt-0.5 p-1 py-2 rounded text-white bg-gray-700'>
                 <option value={'buy'}>Buy</option>
                 <option value={'sell'}>Sell</option>
-                <option value={'sellAll'}>Sell All</option>
+                {/* <option value={'sellAll'}>Sell All</option> */}
               </select>
               <input
                 type='number'
                 min={0}
                 value={amount}
-                onChange={(e) => setAmount(Math.abs(e.currentTarget.value))} placeholder={good.tradeVolume}
-                className='mx-1 p-1 rounded text-white bg-gray-700'/>
-              <button className="button" type="submit">Submit</button>
+                hidden={marketAction == "sellAll"}
+                onChange={(e) => {
+                  setAmount(Math.abs(e.currentTarget.value))
+                }} placeholder={good.tradeVolume}
+                className='mx-1 mt-0.5 p-1 py-2 rounded text-white bg-gray-700'/>
+              <button className="float-right button" type="submit">Submit</button>
+              <p className='text-red-600'>{errorMessage}</p>
             </form>
           ):<></>}
         </td>
       </tr>
     </tbody>
-  )
-}
-
-function Table({title, headers, rows}) {
-  return (
-    <div>
-      <h2 className='text-center text-lg'>{title}</h2>
-      <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
-        <thead className='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
-          <tr>
-            {headers.map((header, index) => (
-              <th key={index} scope='col' className='px-6 py-3'>{header}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, index) => {
-            <tr key={index} className='bg-white border-b dark:bg-gray-800 dark:border-gray-700'>
-              {row.map((field, _index) => (
-                <>
-                  {_index == 0? (
-                    <th key={`${index}_${_index}`} scope='row' className='px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white'>{field}</th>
-                  ): <td key={`${index}_${_index}`} className='px-6 py-4'>{field}</td>}
-                </>
-              ))}
-            </tr>
-          })}
-        </tbody>
-      </table>
-    </div>
   )
 }
 

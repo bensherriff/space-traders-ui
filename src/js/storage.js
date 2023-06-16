@@ -1,24 +1,4 @@
 /**
- * Retrieve the cached agent.
- * @returns cached agent
- */
-export function getAgent() {
-  const agent = getSessionStorage("agent");
-  if (!agent) {
-    return {}
-  }
-  return JSON.parse(agent);
-}
-
-/**
- * Store the agent to be cached.
- * @param {*} agent 
- */
-export function setAgent(agent) {
-  setSessionStorage("agent", JSON.stringify(agent));
-}
-
-/**
  * Retrieve the cached token.
  * @returns cached token
  */

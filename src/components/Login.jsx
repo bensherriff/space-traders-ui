@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import PropTypes from 'prop-types';
-import { Storage, Text } from "../js";
+import { Storage, Text, State } from "../js";
 import { useNavigate } from "react-router-dom";
-import { Button } from ".";
+import { useRecoilState} from "recoil";
 
-export default function Login({ setAgent }) {
+export default function Login() {
+  const [agent, setAgent] = useRecoilState(State.agentState);
   const [token, setToken] = useState("");
   const [name, setName] = useState("");
   const [faction, setFaction] = useState("");
@@ -36,7 +37,6 @@ export default function Login({ setAgent }) {
         setErrorMessage("");
         setToken(token);
         Storage.setToken(token);
-        Storage.setAgent(response.data);
         setAgent(response.data);
         navigate("/fleet");
       } else if (response.error) {
@@ -61,60 +61,59 @@ export default function Login({ setAgent }) {
           <LoginLogo link={"https://github.com/bensherriff/space-traders-ui"} src={"/github-mark-white.svg"} alt={"Github logo"}/>
         </div>
 
-        <div className="flex justify-between">
+        <div className="flex flex-row items-center justify-center lg:justify-start relative">
           <form
-            className="mt-10 row flex flex-col justify-center mx-10 w-full"
+            className="w-full mr-2"
             onSubmit={(e) => {
               e.preventDefault();
               connect();
             }}
           >
-            <div>
-              <label>Access Token</label>
-              <input
-                className="text-black ml-2 p-1 rounded"
-                value={token}
-                onChange={(e) => setToken(e.currentTarget.value)}
-                placeholder="Enter your token..."
-              />
-            </div>
-            <button className="button mt-2 bg-gray-600" type="submit">Connect</button>
+            <input
+              className="peer block text-black ml-2 p-1 rounded w-full"
+              type="password"
+              value={token}
+              onChange={(e) => setToken(e.currentTarget.value)}
+              placeholder="Enter your token..."
+            />
+            <label className="absolute left-3">Access Token</label>
+            <button className="block ml-2 button mt-6 bg-gray-600" type="submit">Connect</button>
           </form>
           <form
-            className="mt-10 row flex flex-col justify-center mx-10 w-full"
+            className="w-full ml-2 mr-4"
             onSubmit={(e) => {
               e.preventDefault();
               register();
             }}
           >
-            <div>
-              <label className="float-left">Name</label>
+            <div className="relative mb-8">
               <input
-                className="text-black ml-2 p-1 rounded float-right"
+                className="peer block text-black ml-2 p-1 rounded w-full"
                 value={name}
                 onChange={(e) => setName(e.currentTarget.value)}
                 placeholder="Between 3-14 characters"
               />
+              <label className="absolute left-3">Name</label>
             </div>
-            <div>
-              <label className="float-left">Faction</label>
+            <div className="relative mb-8">
               <input
-                className="text-black ml-2 p-1 rounded float-right"
+                className="peer block text-black ml-2 p-1 rounded w-full"
                 value={faction}
                 onChange={(e) => setFaction(e.currentTarget.value)}
                 placeholder="REPLACE TO DROPDOWN"
               />
+              <label className="absolute left-3">Faction</label>
             </div>
-            <div>
-              <label className="float-left">Email</label>
+            <div className="relative">
               <input
-                className="text-black ml-2 p-1 rounded float-right"
+                className="peer block text-black ml-2 p-1 rounded w-full"
                 value={email}
                 onChange={(e) => setEmail(e.currentTarget.value)}
                 placeholder="For reserved names"
               />
+              <label className="absolute left-3">Email</label>
             </div>
-            <button className="button mt-2 bg-gray-600" type="submit">Register</button>
+            <button className="block ml-2 button mt-6 bg-gray-600" type="submit">Register</button>
           </form>
         </div>
 

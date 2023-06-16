@@ -1,17 +1,11 @@
-import { useEffect, useState } from "react";
-import { Storage, Text } from "../js";
+import { Text, State } from "../js";
 import { NavLink } from "react-router-dom";
+import { useRecoilState} from "recoil";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faHouse, faCoins } from '@fortawesome/free-solid-svg-icons'
 
 export default function Header() {
-  const [agent, setAgent] = useState(Storage.getAgent());
-
-  useEffect(() => {
-    setInterval(() => {
-      setAgent(Storage.getAgent());
-    }, 60000);
-  }, [])
+  const [agent, setAgent] = useRecoilState(State.agentState);
 
   let split = agent.headquarters.split("-");
   let system = `${split[0]}-${split[1]}`;

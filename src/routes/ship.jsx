@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import {useParams} from 'react-router-dom';
+import { useRecoilState} from "recoil";
+import { useParams } from 'react-router-dom';
 import { invoke } from "@tauri-apps/api/tauri";
-import { Storage, Text } from '../js';
+import { Storage, Text, State } from '../js';
 import { Button, Error, ErrorText } from '../components';
 import { ProgressBarWithLabel } from '../components/ProgressBar';
 import { CargoInfo, ModulesInfo, MountsInfo, NavStatusLink, Navigation } from '../components/Ship';
 
 export default function Ship() {
+  const [agent, setAgent] = useRecoilState(State.agentState);
   const {shipId} = useParams();
   const [ship, setShip] = useState({});
   const [error, setError] = useState({});
@@ -49,7 +51,7 @@ export default function Ship() {
   async function refuel_ship() {
     invoke('refuel_ship', { token: Storage.getToken(), symbol: ship.symbol }).then(response => {
       if (response && response.data) {
-        Storage.setAgent(response.data.agent);
+        setAgent(response.data.agent);
         update_ship({
           ...ship,
           fuel: {
@@ -76,7 +78,7 @@ export default function Ship() {
             <div className='flex justify-between'>
               <ProgressBarWithLabel label="Condition" text={`${ship.frame.condition}/100`} percentage={ship.frame.condition} />
               <ProgressBarWithLabel label={<>Fuel
-                {ship.fuel.current < ship.fuel.capacity && ship.nav.status !== 'IN_TRANSIT'? (
+                {ship.fuel.current < ship.fuel.capacity && ship.nav.status == 'DOCKED'? (
                   <Button className='ml-1 text-sm' onClick={refuel_ship}>Refuel</Button>
                 ): <></>}
                 <ErrorText>{refuelError}</ErrorText>

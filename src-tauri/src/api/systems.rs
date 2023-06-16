@@ -30,7 +30,7 @@ pub async fn list_systems(state: State<'_, DataState>, token: String, limit: u64
 }
 
 #[tauri::command]
-pub async fn load_all_systems(state: State<'_, DataState>, sys: State<'_, SystemsState>, token: String) -> Result<ResponseObject<Vec<System>>, ()> {
+pub async fn load_all_systems(state: State<'_, DataState>, systemState: State<'_, SystemsState>, token: String) -> Result<ResponseObject<Vec<System>>, ()> {
   let mut _state = state;
   let systems_count = crate::data::system::get_systems_count(&_state.pool);
 
@@ -52,7 +52,8 @@ pub async fn load_all_systems(state: State<'_, DataState>, sys: State<'_, System
     Err(_err) => 2
   };
 
-  let mut s = sys.0.lock().unwrap();
+  // TODO future handling, https://users.rust-lang.org/t/future-cannot-be-sent-between-threads-safely-when-use-vector-of-functions-inside-thread/77126/2
+  // let mut s = systemState.0.lock().unwrap();
   if (systems_count as u64) < total_records {
     for page in 1..(max_page + 1) {
       let mut attempts = 3;
@@ -80,14 +81,14 @@ pub async fn load_all_systems(state: State<'_, DataState>, sys: State<'_, System
     }
     let mut systems: Vec<System> = vec![];
     systems.append(&mut crate::data::system::get_all_systems(&_state.pool, None, None));
-    *s = systems.to_owned();
+    // *s = systems.to_owned();
     Ok(ResponseObject { data: Some(systems), error: None, meta: None })
   } else {
     let mut systems: Vec<System> = vec![];
     for i in (1..systems_count).step_by(1000) {
       systems.append(&mut crate::data::system::get_all_systems(&_state.pool, Some(i as i32), Some((i + 999) as i32)));
     }
-    *s = systems.to_owned();
+    // *s = systems.to_owned();
     Ok(ResponseObject { data: Some(systems), error: None, meta: None })
   }
 }

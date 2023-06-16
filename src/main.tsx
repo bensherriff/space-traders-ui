@@ -13,6 +13,8 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
+import store from "./js/state"
+import { RecoilRoot } from 'recoil'
 
 const router = createBrowserRouter([
   {
@@ -53,7 +55,9 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  // <React.StrictMode>
-    <RouterProvider router={router}/>
-  // </React.StrictMode>
+  <RecoilRoot>
+    <React.StrictMode>
+      <RouterProvider router={router}/>
+    </React.StrictMode>
+  </RecoilRoot>
 );

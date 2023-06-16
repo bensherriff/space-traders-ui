@@ -1,11 +1,12 @@
-import { Storage } from "../js";
+import { State } from "../js";
 import { NavLink } from "react-router-dom";
+import { useRecoilState} from "recoil";
 
-export default function Header({ setAgent }) {
+export default function Footer() {
+  const [agent, setAgent] = useRecoilState(State.agentState);
 
   function logout() {
-    Storage.setAgent(null);
-    setAgent(null);
+    setAgent({});
   }
 
   return (

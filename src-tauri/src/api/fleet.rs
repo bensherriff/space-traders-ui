@@ -53,9 +53,13 @@ pub fn get_ships_at_waypoint(state: State<'_, DataState>, waypoint: String) -> R
 }
 
 #[tauri::command]
-pub async fn get_cargo(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<Ship>, ()> {
+pub async fn get_cargo(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<Cargo>, ()> {
   let url = format!("/my/ships/{}/cargo", symbol);
-  let result = handle_result(get_request::<Ship>(&state.client, token, url, None).await);
+  let result = handle_result(get_request::<Cargo>(&state.client, token, url, None).await);
+  match &result.data {
+    Some(d) => crate::data::fleet::update_ship_cargo(&state.pool, &symbol, &d),
+    None => {}
+  };
   Ok(result)
 }
 
@@ -240,6 +244,10 @@ pub async fn sell_cargo(state: State<'_, DataState>, token: String, symbol: Stri
     "units": units
   });
   let result = handle_result(post_request::<TransactionResponse>(&state.client, token, url, Some(body.to_string())).await);
+  match &result.data {
+    Some(d) => crate::data::fleet::update_ship_cargo(&state.pool, &symbol, &d.cargo),
+    None => {}
+  };
   Ok(result)
 }
 
@@ -284,6 +292,10 @@ pub async fn purchase_cargo(state: State<'_, DataState>, token: String, symbol: 
     "units": units
   });
   let result = handle_result(post_request::<TransactionResponse>(&state.client, token, url, Some(body.to_string())).await);
+  match &result.data {
+    Some(d) => crate::data::fleet::update_ship_cargo(&state.pool, &symbol, &d.cargo),
+    None => {}
+  };
   Ok(result)
 }
 
@@ -297,6 +309,10 @@ pub async fn transfer_cargo(state: State<'_, DataState>, token: String, symbol: 
     "shipSymbol": transaction.ship_symbol
   });
   let result = handle_result(post_request::<CargoResponse>(&state.client, token, url, Some(body.to_string())).await);
+  match &result.data {
+    Some(d) => crate::data::fleet::update_ship_cargo(&state.pool, &symbol, &d.cargo),
+    None => {}
+  };
   Ok(result)
 }
 

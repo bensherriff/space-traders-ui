@@ -221,6 +221,34 @@ pub fn insert_ship(pool: &Pool<ConnectionManager<SqliteConnection>>, ship: &Ship
     };
 }
 
+pub fn update_ship_cargo(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symbol: &str, cargo: &Cargo) {
+  use schema::fleet_cargo;
+
+  let mut connection = pool.get().unwrap();
+  let result = delete(fleet_cargo::table)
+    .filter(fleet_cargo::ship_symbol.eq(ship_symbol))
+    .execute(&mut connection);
+  match result {
+    Ok(_) => {},
+    Err(_err) => {}
+  };
+  for item in cargo.inventory.iter() {
+    let result = insert_into(fleet_cargo::table)
+    .values(NewCargoDB {
+        ship_symbol,
+        symbol: &item.symbol,
+        name: &item.name,
+        description: &item.description,
+        units: item.units,
+    })
+    .execute(&mut connection);
+    match result {
+      Ok(_) => {},
+      Err(_err) => {}
+    };
+  }
+}
+
 pub fn update_ship_navigation(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symbol: &str, navigation: &Navigation) {
   use schema::fleet;
 
