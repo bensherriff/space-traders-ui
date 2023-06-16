@@ -1,12 +1,11 @@
 use core::time;
 use std::thread;
 
-use reqwest::Client;
 use tauri::State;
 
 use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, DataState, SystemsState};
 
-use super::{requests::{ResponseObject, get_request, handle_result, ErrorObject}};
+use super::{requests::{ResponseObject, ErrorObject}};
 
 /// Return a list of all systems.
 #[tauri::command]
@@ -17,7 +16,7 @@ pub async fn list_systems(state: State<'_, DataState>, token: String, limit: u64
     ("limit", _limit),
     ("page", _page)
   ];
-  let result = handle_result(get_request::<Vec<System>>(&state.client, token, "/systems".to_string(), Some(query)).await);
+  let result = state.request.get_request::<Vec<System>>(token, "/systems".to_string(), Some(query)).await;
   match &result.data {
     Some(data) => {
       for system in data {
@@ -56,61 +55,32 @@ pub async fn load_all_systems(state: State<'_, DataState>, _system_state: State<
   // let mut s = system_state.0.lock().unwrap();
   if (systems_count as u64) < total_records {
     for page in 1..(total_pages + 1) {
-      let mut attempts = 3;
-      while attempts > 0 {
-        attempts -= 1;
-        let _st = _state.to_owned();
-        let _token = token.to_owned();
-        let result = list_systems(_st, _token, limit, page).await;
-        match result {
-          Ok(r) => {
-            match &r.error {
-              Some(error) => {
-                if error.code == 429 && attempts > 0 {
-                  thread::sleep(time::Duration::from_secs(1));
-                  continue;
+      let _st = _state.to_owned();
+      let _token = token.to_owned();
+      let result = list_systems(_st, _token, limit, page).await;
+      match result {
+        Ok(r) => {
+          match &r.data {
+            Some(d) => {
+              for system in d.iter() {
+                let total_waypoints = system.waypoints.len() as u64;
+                let waypoint_pages = (total_waypoints as f64 / limit as f64).ceil() as u64;
+                for waypoint_page in 1..(waypoint_pages + 1) {
+                  let _st_waypoint = _state.to_owned();
+                  let _token_waypoint = token.to_owned();
+                  let waypoints_result = list_waypoints(_st_waypoint, _token_waypoint, system.symbol.to_string(), limit, waypoint_page).await;
+                  match waypoints_result {
+                    Ok(_) => {}
+                    Err(_err) => {}
+                  };
                 }
               }
-              None => {}
-            };
-            match &r.data {
-              Some(d) => {
-                for system in d.iter() {
-                  let total_waypoints = system.waypoints.len() as u64;
-                  let waypoint_pages = (total_waypoints as f64 / limit as f64).ceil() as u64;
-                  for waypoint_page in 1..(waypoint_pages + 1) {
-                    let mut waypoint_attempts = 3;
-                    while waypoint_attempts > 0 {
-                      waypoint_attempts -= 1;
-                      let _st_waypoint = _state.to_owned();
-                      let _token_waypoint = token.to_owned();
-                      let waypoints_result = list_waypoints(_st_waypoint, _token_waypoint, system.symbol.to_string(), limit, waypoint_page).await;
-                      match waypoints_result {
-                        Ok(r) => {
-                          match &r.error {
-                            Some(error) => {
-                              if error.code == 429 {
-                                thread::sleep(time::Duration::from_millis(750));
-                              } else {
-                                break;
-                              }
-                            }
-                            None => break
-                          }
-                        }
-                        Err(_err) => {}
-                      };
-                    }
-                  }
-                }
-                break;
-              }
-              None => break
-            };
-          }
-          Err(_err) => {}
-        };
-      }
+            }
+            None => {}
+          };
+        }
+        Err(_err) => {}
+      };
     }
     let mut systems: Vec<System> = vec![];
     systems.append(&mut crate::data::system::get_all_systems(&_state.pool, None, None));
@@ -135,7 +105,7 @@ pub async fn get_system(state: State<'_, DataState>, token: String, system: Stri
     },
     None => {
       let url = format!("/systems/{}", system);
-      let result = handle_result(get_request::<System>(&state.client, token, url, None).await);
+      let result = state.request.get_request::<System>(token, url, None).await;
       match &result.data {
         Some(data) => crate::data::system::insert_system(&state.pool, data),
         None => {}
@@ -159,7 +129,7 @@ pub async fn list_waypoints(state: State<'_, DataState>, token: String, system: 
     ("limit", _limit),
     ("page", _page)
   ];
-  let result = handle_result(get_request::<Vec<Waypoint>>(&state.client, token, url, Some(query)).await);
+  let result = state.request.get_request::<Vec<Waypoint>>(token, url, Some(query)).await;
   match &result.data {
     Some(data) => {
       for waypoint in data.iter() {
@@ -180,7 +150,7 @@ pub async fn get_waypoint(state: State<'_, DataState>, token: String, system: St
     }
     None => {
       let url = format!("/systems/{}/waypoints/{}", system, waypoint);
-      let result = handle_result(get_request::<Waypoint>(&state.client, token, url, None).await);
+      let result = state.request.get_request::<Waypoint>(token, url, None).await;
       match &result.data {
         Some(data) => crate::data::system::insert_waypoint(&state.pool, data),
         None => {}
@@ -196,7 +166,7 @@ pub async fn get_waypoint(state: State<'_, DataState>, token: String, system: St
 #[tauri::command]
 pub async fn get_market(state: State<'_, DataState>, token: String, system: String, waypoint: String) -> Result<ResponseObject<Market>, ()> {
   let url = format!("/systems/{}/waypoints/{}/market", system, waypoint);
-  let result = handle_result(get_request::<Market>(&state.client, token, url, None).await);
+  let result = state.request.get_request::<Market>(token, url, None).await;
   match &result.data {
     Some(data) => {
       crate::data::system::insert_market(&state.pool, &waypoint, &data);
@@ -220,14 +190,14 @@ pub async fn get_market(state: State<'_, DataState>, token: String, system: Stri
 #[tauri::command]
 pub async fn get_shipyard(state: State<'_, DataState>, token: String, system: String, waypoint: String) -> Result<ResponseObject<Shipyard>, ()> {
   let url = format!("/systems/{}/waypoints/{}/shipyard", system, waypoint);
-  let result = handle_result(get_request::<Shipyard>(&state.client, token, url, None).await);
+  let result = state.request.get_request::<Shipyard>(token, url, None).await;
   Ok(result)
 }
 
 /// Get jump gate details for a waypoint.
 #[tauri::command]
-pub async fn get_jump_gate(client: State<'_, Client>, token: String, system: String, waypoint: String) -> Result<ResponseObject<JumpGate>, ()> {
+pub async fn get_jump_gate(state: State<'_, DataState>, token: String, system: String, waypoint: String) -> Result<ResponseObject<JumpGate>, ()> {
   let url = format!("/systems/{}/waypoints/{}/jump-gate", system, waypoint);
-  let result = handle_result(get_request::<JumpGate>(&client, token, url, None).await);
+  let result = state.request.get_request::<JumpGate>(token, url, None).await;
   Ok(result)
 }

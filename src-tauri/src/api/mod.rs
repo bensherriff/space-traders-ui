@@ -2,7 +2,7 @@ use tauri::State;
 
 use crate::{models::{status::Status, agent::{NewAgent, NewAgentResponse}}, DataState};
 
-use self::requests::{ResponseObject, get_request, post_request, handle_result};
+use self::requests::{ResponseObject};
 
 pub mod agents;
 pub mod contracts;
@@ -13,7 +13,7 @@ pub mod systems;
 
 #[tauri::command]
 pub async fn get_status(state: State<'_, DataState>) -> Result<ResponseObject<Status>, ()> {
-  let result = handle_result(get_request::<Status>(&state.client, "".to_string(), "/".to_string(), None).await);
+  let result = state.request.get_request::<Status>("".to_string(), "/".to_string(), None).await;
   Ok(result)
 }
 
@@ -24,6 +24,6 @@ pub async fn register(state: State<'_, DataState>, token: String, faction: Strin
     symbol: symbol.to_string(),
     email: email.to_string()
   };
-  let result = handle_result(post_request::<NewAgentResponse>(&state.client, token, "/register".to_string(), Some(serde_json::to_string(&new_agent).unwrap())).await);
+  let result = state.request.post_request::<NewAgentResponse>(token, "/register".to_string(), Some(serde_json::to_string(&new_agent).unwrap())).await;
   Ok(result)
 }

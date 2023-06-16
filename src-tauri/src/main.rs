@@ -3,6 +3,7 @@
 
 use std::sync::Mutex;
 
+use api::requests::Request;
 use diesel::{r2d2::{Pool, ConnectionManager}, SqliteConnection};
 use log::{error, info, LevelFilter};
 
@@ -17,7 +18,7 @@ mod models;
 
 pub struct DataState {
   pool: Pool<ConnectionManager<SqliteConnection>>,
-  client: Client,
+  request: Request,
 }
 
 pub struct SystemsState(Mutex<Vec<System>>);
@@ -25,7 +26,11 @@ pub struct SystemsState(Mutex<Vec<System>>);
 fn main() {
   let state = DataState {
     pool: connection_pool(),
-    client: Client::new()
+    request: Request {
+      client: Client::new(),
+      base_url: "https://api.spacetraders.io/v2".to_string(),
+      max_attemps: 3
+    }
   };
 
   match tauri::Builder::default()

@@ -2,11 +2,11 @@ use tauri::State;
 
 use crate::{models::{ship::{Ship, ShipTransactionResponse, ShipType, navigation::{NavigationResponse, ShipJumpResponse, ShipNavigateResponse, FlightMode, Navigation}, cargo::{CargoRefinement, ExtractedCargo, CargoItem, Cargo, CargoResponse}, cooldown::Cooldown, ShipScanResponse, fuel::RefuelResponse}, survey::{SurveyResponse, Survey}, transaction::{TransactionResponse, Transaction}, system::SystemScanResponse, waypoint::WaypointScanResponse, contract::Contract, chart::ChartResponse}, data::fleet::insert_ship, DataState};
 
-use super::requests::{ResponseObject, handle_result, get_request, post_request, patch_request};
+use super::requests::{ResponseObject};
 
 #[tauri::command]
 pub async fn list_ships(state: State<'_, DataState>, token: String) -> Result<ResponseObject<Vec<Ship>>, ()> {
-  let result = handle_result(get_request::<Vec<Ship>>(&state.client, token, "/my/ships".to_string(), None).await);
+  let result = state.request.get_request::<Vec<Ship>>(token, "/my/ships".to_string(), None).await;
   match &result.data {
     Some(data) => {
       for ship in data.iter() {
@@ -24,7 +24,7 @@ pub async fn purchase_ship(state: State<'_, DataState>, token: String, ship_type
     "shipType": ship_type,
     "waypointSymbol": waypoint
   });
-  let result = handle_result(post_request::<ShipTransactionResponse>(&state.client, token, "/my/ships".to_string(), Some(body.to_string())).await);
+  let result = state.request.post_request::<ShipTransactionResponse>(token, "/my/ships".to_string(), Some(body.to_string())).await;
   Ok(result)
 }
 
@@ -36,7 +36,7 @@ pub async fn get_ship(state: State<'_, DataState>, token: String, symbol: String
     }
     None => {
       let url = format!("/my/ships/{}", symbol);
-      let result = handle_result(get_request::<Ship>(&state.client, token, url, None).await);
+      let result = state.request.get_request::<Ship>(token, url, None).await;
       match &result.data {
         Some(data) => insert_ship(&state.pool, data),
         None => {}
@@ -55,7 +55,7 @@ pub fn get_ships_at_waypoint(state: State<'_, DataState>, waypoint: String) -> R
 #[tauri::command]
 pub async fn get_cargo(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<Cargo>, ()> {
   let url = format!("/my/ships/{}/cargo", symbol);
-  let result = handle_result(get_request::<Cargo>(&state.client, token, url, None).await);
+  let result = state.request.get_request::<Cargo>(token, url, None).await;
   match &result.data {
     Some(d) => crate::data::fleet::update_ship_cargo(&state.pool, &symbol, &d),
     None => {}
@@ -66,7 +66,7 @@ pub async fn get_cargo(state: State<'_, DataState>, token: String, symbol: Strin
 #[tauri::command]
 pub async fn orbit_ship(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<NavigationResponse>, ()> {
   let url = format!("/my/ships/{}/orbit", symbol);
-  let result = handle_result(post_request::<NavigationResponse>(&state.client, token, url, None).await);
+  let result = state.request.post_request::<NavigationResponse>(token, url, None).await;
   match &result.data {
     Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data.nav),
     None => {}
@@ -77,28 +77,28 @@ pub async fn orbit_ship(state: State<'_, DataState>, token: String, symbol: Stri
 #[tauri::command]
 pub async fn refine(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<CargoRefinement>, ()> {
   let url = format!("/my/ships/{}/refine", symbol);
-  let result = handle_result(post_request::<CargoRefinement>(&state.client, token, url, None).await);
+  let result = state.request.post_request::<CargoRefinement>(token, url, None).await;
   Ok(result)
 }
 
 #[tauri::command]
 pub async fn create_chart(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<ChartResponse>, ()> {
   let url = format!("/my/ships/{}/chart", symbol);
-  let result = handle_result(post_request::<ChartResponse>(&state.client, token, url, None).await);
+  let result = state.request.post_request::<ChartResponse>(token, url, None).await;
   Ok(result)
 }
 
 #[tauri::command]
 pub async fn get_cooldown(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<Cooldown>, ()> {
   let url = format!("/my/ships/{}/cooldown", symbol);
-  let result = handle_result(get_request::<Cooldown>(&state.client, token, url, None).await);
+  let result = state.request.get_request::<Cooldown>(token, url, None).await;
   Ok(result)
 }
 
 #[tauri::command]
 pub async fn dock_ship(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<NavigationResponse>, ()> {
   let url = format!("/my/ships/{}/dock", symbol);
-  let result = handle_result(post_request::<NavigationResponse>(&state.client, token, url, None).await);
+  let result = state.request.post_request::<NavigationResponse>(token, url, None).await;
   match &result.data {
     Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data.nav),
     None => {}
@@ -117,7 +117,7 @@ pub async fn dock_ship(state: State<'_, DataState>, token: String, symbol: Strin
 #[tauri::command]
 pub async fn create_survey(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<SurveyResponse>, ()> {
   let url = format!("/my/ships/{}/survey", symbol);
-  let result = handle_result(post_request::<SurveyResponse>(&state.client, token, url, None).await);
+  let result = state.request.post_request::<SurveyResponse>(token, url, None).await;
   Ok(result)
 }
 
@@ -127,12 +127,12 @@ pub async fn extract_resources(state: State<'_, DataState>, token: String, symbo
   let url = format!("/my/ships/{}/extract", symbol);
   let result; 
   match survey {
-    None => result = handle_result(post_request::<ExtractedCargo>(&state.client, token, url, None).await),
+    None => result = state.request.post_request::<ExtractedCargo>(token, url, None).await,
     Some(s) => {
       let body = serde_json::json!({
         "survey": serde_json::json!(s)
       });
-      result = handle_result(post_request::<ExtractedCargo>(&state.client, token, url, Some(body.to_string())).await);
+      result = state.request.post_request::<ExtractedCargo>(token, url, Some(body.to_string())).await;
     }
   }
   Ok(result)
@@ -146,7 +146,7 @@ pub async fn jettison_cargo(state: State<'_, DataState>, token: String, symbol: 
     "symbol": item.symbol,
     "units": item.units
   });
-  let result = handle_result(post_request::<Cargo>(&state.client, token, url, Some(body.to_string())).await);
+  let result = state.request.post_request::<Cargo>(token, url, Some(body.to_string())).await;
   Ok(result)
 }
 
@@ -159,7 +159,7 @@ pub async fn jump_ship(state: State<'_, DataState>, token: String, symbol: Strin
   let body = serde_json::json!({
     "systemSymbol": system
   });
-  let result = handle_result(post_request::<ShipJumpResponse>(&state.client, token, url, Some(body.to_string())).await);
+  let result = state.request.post_request::<ShipJumpResponse>(token, url, Some(body.to_string())).await;
   match &result.data {
     Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data.nav),
     None => {}
@@ -180,7 +180,7 @@ pub async fn navigate_ship(state: State<'_, DataState>, token: String, symbol: S
   let body = serde_json::json!({
     "waypointSymbol": waypoint
   });
-  let result = handle_result(post_request::<ShipNavigateResponse>(&state.client, token, url, Some(body.to_string())).await);
+  let result = state.request.post_request::<ShipNavigateResponse>(token, url, Some(body.to_string())).await;
   match &result.data {
     Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data.nav),
     None => {}
@@ -195,7 +195,7 @@ pub async fn patch_ship_navigation(state: State<'_, DataState>, token: String, s
   let body = serde_json::json!({
     "flightMode": flight_mode
   });
-  let result = handle_result(patch_request::<Navigation>(&state.client, token, url, Some(body.to_string())).await);
+  let result = state.request.patch_request::<Navigation>(token, url, Some(body.to_string())).await;
   match &result.data {
     Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data),
     None => {}
@@ -207,7 +207,7 @@ pub async fn patch_ship_navigation(state: State<'_, DataState>, token: String, s
 #[tauri::command]
 pub async fn get_ship_nav(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<Navigation>, ()> {
   let url = format!("/my/ships/{}/nav", symbol);
-  let result = handle_result(get_request::<Navigation>(&state.client, token, url, None).await);
+  let result = state.request.get_request::<Navigation>(token, url, None).await;
   match &result.data {
     Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data),
     None => {}
@@ -227,7 +227,7 @@ pub async fn warp_ship(state: State<'_, DataState>, token: String, symbol: Strin
   let body = serde_json::json!({
     "waypointSymbol": waypoint
   });
-  let result = handle_result(post_request::<Navigation>(&state.client, token, url, Some(body.to_string())).await);
+  let result = state.request.post_request::<Navigation>(token, url, Some(body.to_string())).await;
   match &result.data {
     Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data),
     None => {}
@@ -243,7 +243,7 @@ pub async fn sell_cargo(state: State<'_, DataState>, token: String, symbol: Stri
     "symbol": item_symbol,
     "units": units
   });
-  let result = handle_result(post_request::<TransactionResponse>(&state.client, token, url, Some(body.to_string())).await);
+  let result = state.request.post_request::<TransactionResponse>(token, url, Some(body.to_string())).await;
   match &result.data {
     Some(d) => crate::data::fleet::update_ship_cargo(&state.pool, &symbol, &d.cargo),
     None => {}
@@ -255,7 +255,7 @@ pub async fn sell_cargo(state: State<'_, DataState>, token: String, symbol: Stri
 #[tauri::command]
 pub async fn scan_systems(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<SystemScanResponse>, ()> {
   let url = format!("/my/ships/{}/scan/systems", symbol);
-  let result = handle_result(post_request::<SystemScanResponse>(&state.client, token, url, None).await);
+  let result = state.request.post_request::<SystemScanResponse>(token, url, None).await;
   Ok(result)
 }
 
@@ -263,7 +263,7 @@ pub async fn scan_systems(state: State<'_, DataState>, token: String, symbol: St
 #[tauri::command]
 pub async fn scan_waypoints(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<WaypointScanResponse>, ()> {
   let url = format!("/my/ships/{}/scan/waypoints", symbol);
-  let result = handle_result(post_request::<WaypointScanResponse>(&state.client, token, url, None).await);
+  let result = state.request.post_request::<WaypointScanResponse>(token, url, None).await;
   Ok(result)
 }
 
@@ -271,7 +271,7 @@ pub async fn scan_waypoints(state: State<'_, DataState>, token: String, symbol: 
 #[tauri::command]
 pub async fn scan_ships(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<ShipScanResponse>, ()> {
   let url = format!("/my/ships/{}/scan/ships", symbol);
-  let result = handle_result(post_request::<ShipScanResponse>(&state.client, token, url, None).await);
+  let result = state.request.post_request::<ShipScanResponse>(token, url, None).await;
   Ok(result)
 }
 
@@ -279,7 +279,7 @@ pub async fn scan_ships(state: State<'_, DataState>, token: String, symbol: Stri
 #[tauri::command]
 pub async fn refuel_ship(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<RefuelResponse>, ()> {
   let url = format!("/my/ships/{}/refuel", symbol);
-  let result = handle_result(post_request::<RefuelResponse>(&state.client, token, url, None).await);
+  let result = state.request.post_request::<RefuelResponse>(token, url, None).await;
   Ok(result)
 }
 
@@ -291,7 +291,7 @@ pub async fn purchase_cargo(state: State<'_, DataState>, token: String, symbol: 
     "symbol": item_symbol,
     "units": units
   });
-  let result = handle_result(post_request::<TransactionResponse>(&state.client, token, url, Some(body.to_string())).await);
+  let result = state.request.post_request::<TransactionResponse>(token, url, Some(body.to_string())).await;
   match &result.data {
     Some(d) => crate::data::fleet::update_ship_cargo(&state.pool, &symbol, &d.cargo),
     None => {}
@@ -308,7 +308,7 @@ pub async fn transfer_cargo(state: State<'_, DataState>, token: String, symbol: 
     "units": transaction.units,
     "shipSymbol": transaction.ship_symbol
   });
-  let result = handle_result(post_request::<CargoResponse>(&state.client, token, url, Some(body.to_string())).await);
+  let result = state.request.post_request::<CargoResponse>(token, url, Some(body.to_string())).await;
   match &result.data {
     Some(d) => crate::data::fleet::update_ship_cargo(&state.pool, &symbol, &d.cargo),
     None => {}
@@ -319,6 +319,6 @@ pub async fn transfer_cargo(state: State<'_, DataState>, token: String, symbol: 
 #[tauri::command]
 pub async fn negotiate_contract(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<Contract>, ()> {
   let url = format!("/my/ships/{}/negotiate/contract", symbol);
-  let result = handle_result(post_request::<Contract>(&state.client, token, url, None).await);
+  let result = state.request.post_request::<Contract>(token, url, None).await;
   Ok(result)
 }
