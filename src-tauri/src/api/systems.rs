@@ -53,6 +53,7 @@ pub async fn load_all_systems(state: State<'_, DataState>, _system_state: State<
 
   // TODO future handling, https://users.rust-lang.org/t/future-cannot-be-sent-between-threads-safely-when-use-vector-of-functions-inside-thread/77126/2
   // let mut s = system_state.0.lock().unwrap();
+  let mut systems: Vec<System> = vec![];
   if (systems_count as u64) < total_records {
     for page in 1..(total_pages + 1) {
       let _st = _state.to_owned();
@@ -62,19 +63,21 @@ pub async fn load_all_systems(state: State<'_, DataState>, _system_state: State<
         Ok(r) => {
           match &r.data {
             Some(d) => {
-              for system in d.iter() {
-                let total_waypoints = system.waypoints.len() as u64;
-                let waypoint_pages = (total_waypoints as f64 / limit as f64).ceil() as u64;
-                for waypoint_page in 1..(waypoint_pages + 1) {
-                  let _st_waypoint = _state.to_owned();
-                  let _token_waypoint = token.to_owned();
-                  let waypoints_result = list_waypoints(_st_waypoint, _token_waypoint, system.symbol.to_string(), limit, waypoint_page).await;
-                  match waypoints_result {
-                    Ok(_) => {}
-                    Err(_err) => {}
-                  };
-                }
-              }
+              let mut _systems = d.to_owned();
+              systems.append(&mut _systems);
+          //     for system in d.iter() {
+          //       let total_waypoints = system.waypoints.len() as u64;
+          //       let waypoint_pages = (total_waypoints as f64 / limit as f64).ceil() as u64;
+          //       for waypoint_page in 1..(waypoint_pages + 1) {
+          //         let _st_waypoint = _state.to_owned();
+          //         let _token_waypoint = token.to_owned();
+          //         let waypoints_result = list_waypoints(_st_waypoint, _token_waypoint, system.symbol.to_string(), limit, waypoint_page).await;
+          //         match waypoints_result {
+          //           Ok(_) => {}
+          //           Err(_err) => {}
+          //         };
+          //       }
+          //     }
             }
             None => {}
           };
@@ -82,18 +85,14 @@ pub async fn load_all_systems(state: State<'_, DataState>, _system_state: State<
         Err(_err) => {}
       };
     }
-    let mut systems: Vec<System> = vec![];
-    systems.append(&mut crate::data::system::get_all_systems(&_state.pool, None, None));
     // *s = systems.to_owned();
-    Ok(ResponseObject { data: Some(systems), error: None, meta: None })
   } else {
-    let mut systems: Vec<System> = vec![];
     for i in (1..systems_count).step_by(1000) {
       systems.append(&mut crate::data::system::get_all_systems(&_state.pool, Some(i as i32), Some((i + 999) as i32)));
     }
     // *s = systems.to_owned();
-    Ok(ResponseObject { data: Some(systems), error: None, meta: None })
   }
+  Ok(ResponseObject { data: Some(systems), error: None, meta: None })
 }
 
 /// Get the details of a system.
@@ -165,22 +164,40 @@ pub async fn get_waypoint(state: State<'_, DataState>, token: String, system: St
 /// Send a ship to the waypoint to access trade good prices and recent transactions.
 #[tauri::command]
 pub async fn get_market(state: State<'_, DataState>, token: String, system: String, waypoint: String) -> Result<ResponseObject<Market>, ()> {
-  let url = format!("/systems/{}/waypoints/{}/market", system, waypoint);
-  let result = state.request.get_request::<Market>(token, url, None).await;
-  match &result.data {
-    Some(data) => {
-      crate::data::system::insert_market(&state.pool, &waypoint, &data);
-      Ok(result)
-    },
-    None => {
-      match crate::data::system::get_market(&state.pool, &waypoint) {
-        Some(m) => {
-          Ok(ResponseObject { data: Some(m), error: None, meta: None })
-        }
-        None => {
-            Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Unable to update market data".to_string() }), meta: None })
-        }
+  let _state = state.to_owned();
+  let _waypoint = waypoint.to_owned();
+
+  async fn get_fresh_data(state: State<'_, DataState>, token: String, system: String, waypoint: String) -> Result<ResponseObject<Market>, ()> {
+    let url = format!("/systems/{}/waypoints/{}/market", system, waypoint);
+    let result = state.request.get_request::<Market>(token, url, None).await;
+    match &result.data {
+      Some(d) => {
+        crate::data::system::insert_market(&state.pool, &waypoint, &d);
       }
+      None => {}
+    };
+    return Ok(result)
+  }
+
+  match crate::data::system::get_market(&_state.pool, &_waypoint) {
+    Some(m) => {
+      match crate::api::fleet::get_ships_at_waypoint(_state, _waypoint) {
+        Ok(r) => {
+          match &r.data {
+            Some(s) => {
+              if s.len() > 0 {
+                return get_fresh_data(state, token, system, waypoint).await
+              }
+            }
+            None => {}
+          }
+        }
+        Err(_err) => {}
+      }
+      return Ok(ResponseObject { data: Some(m), error: None, meta: None })
+    }
+    None => {
+      return get_fresh_data(state, token, system, waypoint).await
     }
   }
 }

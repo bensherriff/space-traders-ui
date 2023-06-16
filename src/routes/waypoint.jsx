@@ -50,15 +50,15 @@ export default function Waypoint() {
         });
         setShips(_ships);
         // Local ships
-        invoke("get_ships_at_waypoint", { waypoint: waypointId }).then((response) => {
-          if (response && response.data) {
-            setLocalShips(response.data);
-            if (response.data.length > 0) {
-              setCurrentShip(response.data[0]);
-              setCurrentShipSymbol(response.data[0].symbol);
+        invoke("get_ships_at_waypoint", { waypoint: waypointId }).then((res) => {
+          if (res && res.data) {
+            setLocalShips(res.data);
+            if (res.data.length > 0) {
+              setCurrentShip(res.data[0]);
+              setCurrentShipSymbol(res.data[0].symbol);
               // Other ships
               let _otherShips = Object.values(_ships).filter(object1 => {
-                return !response.data.some(object2 => {
+                return !res.data.some(object2 => {
                   return object1.symbol === object2.symbol;
                 });
               });
@@ -71,13 +71,21 @@ export default function Waypoint() {
               setLocalShips([]);
               setCurrentShip(null);
               setCurrentShipSymbol("");
-              setOtherShips(ships);
-              setOtherShip(null);
+              setOtherShips(response.data);
+              if (response.data.length > 0) {
+                setOtherShip(response.data[0]);
+                setOtherShipSymbol(response.data[0].symbol);
+              } else {
+                setOtherShip(null);
+                setOtherShipSymbol("");
+              }
             }
-          } else if (response && response.error) {
-            console.error(response.error);
+          } else if (res && res.error) {
+            console.error(res.error);
           }
         });
+      } else if (response && response.error) {
+        console.error(response.error);
       }
     });
   }
@@ -285,8 +293,8 @@ function Marketplace({systemId, waypointId, ship}) {
                   <tr>
                     <th scope='col' className='px-2 py-3'>Item</th>
                     <th scope='col' className='px-2 py-3'>Supply</th>
-                    <th scope='col' className='px-2 py-3'>Price</th>
-                    <th scope='col' className='px-2 py-3'>Action</th>
+                    { ship? ( <th scope='col' className='px-2 py-3'>Price</th> ): <th scope='col' className='px-2 py-3'>Buy</th> }
+                    { ship? ( <th scope='col' className='px-2 py-3'>Action</th> ): <th scope='col' className='px-2 py-3'>Sell</th> }
                   </tr>
                 </thead>
                 {market.tradeGoods.map((good, index) => <MarketAction key={index} good={good} ship={ship}/>)}
@@ -372,39 +380,46 @@ function MarketAction({good, ship}) {
       <tr className='bg-white border-b dark:bg-gray-800 dark:border-gray-700'>
         <th scope='row' className='px-2 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white'>{Text.capitalize(good.symbol)}</th>
         <td className='px-2 py-2'>{Text.capitalize(good.supply)}</td>
-        {marketAction == "buy"? (
-          <td className='px-2 py-2 text-red-400'>{Text.currency(good.purchasePrice)}</td>
+        { ship? (
+          <>
+            {marketAction == "buy"? (
+              <td className='px-2 py-2 text-red-400'>{Text.currency(good.purchasePrice)}</td>
+            ):
+              <td className='px-2 py-2 text-green-400'>{Text.currency(good.sellPrice)}</td>
+            }
+            <td className='px-2 py-2'>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAction();
+                }}
+                className=''
+              >
+                <select value={marketAction} onChange={(e) => setMarketAction(e.target.value)} className='mx-1 mt-0.5 p-1 py-2 rounded text-white bg-gray-700'>
+                  <option value={'buy'}>Buy</option>
+                  <option value={'sell'}>Sell</option>
+                  {/* <option value={'sellAll'}>Sell All</option> */}
+                </select>
+                <input
+                  type='number'
+                  min={0}
+                  value={amount}
+                  hidden={marketAction == "sellAll"}
+                  onChange={(e) => {
+                    setAmount(Math.abs(e.currentTarget.value))
+                  }} placeholder={good.tradeVolume}
+                  className='mx-1 mt-0.5 p-1 py-2 rounded text-white bg-gray-700'/>
+                <button className="float-right button" type="submit">Submit</button>
+                <p className='text-red-600'>{errorMessage}</p>
+              </form>
+            </td>
+          </>
         ):
+        <>
+          <td className='px-2 py-2 text-red-400'>{Text.currency(good.purchasePrice)}</td>
           <td className='px-2 py-2 text-green-400'>{Text.currency(good.sellPrice)}</td>
+        </>
         }
-        <td className='px-2 py-2'>
-          {ship? (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAction();
-              }}
-              className=''
-            >
-              <select value={marketAction} onChange={(e) => setMarketAction(e.target.value)} className='mx-1 mt-0.5 p-1 py-2 rounded text-white bg-gray-700'>
-                <option value={'buy'}>Buy</option>
-                <option value={'sell'}>Sell</option>
-                {/* <option value={'sellAll'}>Sell All</option> */}
-              </select>
-              <input
-                type='number'
-                min={0}
-                value={amount}
-                hidden={marketAction == "sellAll"}
-                onChange={(e) => {
-                  setAmount(Math.abs(e.currentTarget.value))
-                }} placeholder={good.tradeVolume}
-                className='mx-1 mt-0.5 p-1 py-2 rounded text-white bg-gray-700'/>
-              <button className="float-right button" type="submit">Submit</button>
-              <p className='text-red-600'>{errorMessage}</p>
-            </form>
-          ):<></>}
-        </td>
       </tr>
     </tbody>
   )

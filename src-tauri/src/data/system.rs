@@ -353,7 +353,6 @@ pub fn get_market(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoint_sym
         return None;
       }
       for item in r.iter() {
-        println!("{}", &item.symbol);
         let market_item = MarketItem {
           symbol: MarketItemType::from_str(&item.symbol).unwrap(),
           name: item.name.to_string(),

@@ -1,7 +1,7 @@
 use core::time;
 use std::thread;
 use log::warn;
-use reqwest::{Client};
+use reqwest::{Client, RequestBuilder};
 use serde::{de, Deserialize, Serialize};
 use serde_json::Value;
 
@@ -45,7 +45,6 @@ impl Request {
     let attempt: u64 = 0;
 
     while attempt < self.max_attemps {
-      let response: Value;
       let mut uri: String = format!("{}{}", self.base_url, url);
       let _token = token.to_owned();
       let _query = query.to_owned();
@@ -63,17 +62,7 @@ impl Request {
         },
         None => {}
       }
-      response = match match self.client.get(uri)
-        .bearer_auth(_token)
-        .send()
-        .await {
-          Ok(r) => r,
-          Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: format!("{}", err) }), meta: None }
-        }.json::<Value>().await {
-          Ok(r) => r,
-          Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: format!("{}", err) }), meta: None }
-        };
-      let result = self.handle_response(&response);
+      let result = self.send(self.client.get(uri).bearer_auth(_token)).await;
       match &result.error {
         Some(error) => {
           if error.code == 429 {
@@ -84,52 +73,27 @@ impl Request {
             continue;
           }
         }
-        None => {}
+        None => return result
       }
-      return result
     }
-    ResponseObject { data: None, error: Some(ErrorObject { code: 9998, message: "".to_string() }), meta: None }
+    ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: "".to_string() }), meta: None }
   }
   
   pub async fn post_request<T: de::DeserializeOwned>(&self, token: String, url: String, body: Option<String>) -> ResponseObject<T> {
     let attempt: u64 = 0;
     
     while attempt < self.max_attemps {
-      let response: Value;
       let uri: String = format!("{}{}", self.base_url, url);
       let _token = token.to_owned();
       let _body = body.to_owned();
-      match _body {
+      let result = match _body {
         None => {
-          response = match match self.client.post(uri)
-            .bearer_auth(_token)
-            .header("Content-Length", "0")
-            .send()
-            .await {
-              Ok(r) => r,
-              Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 999, message: format!("{}", err) }), meta: None }
-            }.json::<Value>().await {
-              Ok(r) => r,
-              Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 999, message: format!("{}", err) }), meta: None }
-            };
+          self.send(self.client.post(uri).bearer_auth(_token).header("Content-Length", "0"))
         }
         Some(b) => {
-          response = match match self.client.post(uri)
-            .bearer_auth(_token)
-            .header("Content-Length", b.len())
-            .header("Content-Type", "application/json".to_string())
-            .body(b)
-            .send()
-            .await {
-              Ok(r) => r,
-              Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: format!("{}", err) }), meta: None }
-            }.json::<Value>().await {
-              Ok(r) => r,
-              Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: format!("{}", err) }), meta: None }
-            };
+          self.send(self.client.post(uri).bearer_auth(_token).header("Content-Type", "application/json".to_string()).body(b))
         }
-      }
-      let result = self.handle_response(&response);
+      }.await;
       match &result.error {
         Some(error) => {
           if error.code == 429 {
@@ -140,52 +104,27 @@ impl Request {
             continue;
           }
         }
-        None => {}
+        None => return result
       }
-      return result
     }
-    ResponseObject { data: None, error: Some(ErrorObject { code: 9998, message: "".to_string() }), meta: None }
+    ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: "".to_string() }), meta: None }
   }
   
   pub async fn patch_request<T: de::DeserializeOwned>(&self, token: String, url: String, body: Option<String>) -> ResponseObject<T> {
     let attempt: u64 = 0;
     
     while attempt < self.max_attemps {
-      let response: Value;
       let uri: String = format!("{}{}", self.base_url, url);
       let _token = token.to_owned();
       let _body = body.to_owned();
-      match _body {
+      let result = match _body {
         None => {
-          response = match match self.client.patch(uri)
-            .bearer_auth(_token)
-            .header("Content-Length", "0")
-            .send()
-            .await {
-              Ok(r) => r,
-              Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: format!("{}", err) }), meta: None }
-            }.json::<Value>().await {
-              Ok(r) => r,
-              Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: format!("{}", err) }), meta: None }
-            };
+          self.send(self.client.patch(uri).bearer_auth(_token).header("Content-Length", "0"))
         }
         Some(b) => {
-          response = match match self.client.patch(uri)
-            .bearer_auth(_token)
-            .header("Content-Length", b.len())
-            .header("Content-Type", "application/json".to_string())
-            .body(b)
-            .send()
-            .await {
-              Ok(r) => r,
-              Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: format!("{}", err) }), meta: None }
-            }.json::<Value>().await {
-              Ok(r) => r,
-              Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: format!("{}", err) }), meta: None }
-            };
+          self.send(self.client.patch(uri).bearer_auth(_token).header("Content-Type", "application/json".to_string()).body(b))
         }
-      }
-      let result = self.handle_response(&response);
+      }.await;
       match &result.error {
         Some(error) => {
           if error.code == 429 {
@@ -196,74 +135,90 @@ impl Request {
             continue;
           }
         }
-        None => {}
+        None => return result
       }
-      return result
     }
-    ResponseObject { data: None, error: Some(ErrorObject { code: 9998, message: "".to_string() }), meta: None }
+    ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: "".to_string() }), meta: None }
   }
   
-  fn handle_response<T: de::DeserializeOwned>(&self, response: &Value) -> ResponseObject<T> {
-    let _response: Value = response.clone();
-    let result: Result<ResponseObjectEvent<T>, _> = serde_json::from_value::<ResponseObjectEvent<T>>(_response);
-    let response: Result<ResponseObject<T>, Box<dyn std::error::Error>> = match result {
-      Ok(deserialized) => {
-        match deserialized {
-          ResponseObjectEvent::Object(object) => {
-            Ok(ResponseObject {
-              data: Some(object),
-              error: None,
-              meta: None
-            })
-          }
-          ResponseObjectEvent::GetObject(get_object) => {
-            Ok(get_object)
-          }
-          ResponseObjectEvent::ErrorObject(error_object) => {
-            Ok(ResponseObject {
-              data: None,
-              error: Some(error_object),
-              meta: None
-            })
-          }
-          _ => {
-            warn!("Unable to match ResponseObject\n{:#?}", response);
-            Ok(ResponseObject {
-              data: None,
-              error: Some(ErrorObject {
-                code: 9995,
-                message: "Unable to match response object".to_string(),
-              }),
-              meta: None
-            })
-          }
-        }
+  async fn send<T: de::DeserializeOwned>(&self, request_builder: RequestBuilder) -> ResponseObject<T> {
+    let response = match match request_builder
+      .send()
+      .await {
+        Ok(r) => r,
+        Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: format!("{}", err) }), meta: None }
       }
-      Err(err) => {
-        warn!("Failed to deserialized object\n{:#?}\n{}", response, err);
-        Ok(ResponseObject {
-          data: None,
-          error: Some(ErrorObject {
-            code: 9996,
-            message: "Failed to deserialize object".to_string(),
-          }),
-          meta: None
-        })
-      }
-    };
+      .json::<Value>()
+      .await {
+        Ok(r) => r,
+        Err(err) => return ResponseObject { data: None, error: Some(ErrorObject { code: 9999, message: format!("{}", err) }), meta: None }
+      };
 
-    match response {
-      Ok(r) => r,
-      Err(err) => {
-        ResponseObject {
-          data: None,
-          error: Some(ErrorObject {
-            code: 9997,
-            message: format!("{}", err),
-          }),
-          meta: None,
+      let result: Result<ResponseObjectEvent<T>, _> = serde_json::from_value::<ResponseObjectEvent<T>>(response);
+      let response_object: Result<ResponseObject<T>, Box<dyn std::error::Error>> = match result {
+        Ok(deserialized) => {
+          match deserialized {
+            ResponseObjectEvent::Object(object) => {
+              Ok(ResponseObject {
+                data: Some(object),
+                error: None,
+                meta: None
+              })
+            }
+            ResponseObjectEvent::GetObject(get_object) => {
+              match &get_object.error {
+                Some(error) => warn!("{}", error.message),
+                None => {}
+              };
+              Ok(get_object)
+            }
+            ResponseObjectEvent::ErrorObject(error_object) => {
+              warn!("{}", error_object.message);
+              Ok(ResponseObject {
+                data: None,
+                error: Some(error_object),
+                meta: None
+              })
+            }
+            _ => {
+              warn!("Unable to match ResponseObject");
+              Ok(ResponseObject {
+                data: None,
+                error: Some(ErrorObject {
+                  code: 9999,
+                  message: "Unable to match response object".to_string(),
+                }),
+                meta: None
+              })
+            }
+          }
+        }
+        Err(err) => {
+          warn!("Failed to deserialized object\n{}", err);
+          Ok(ResponseObject {
+            data: None,
+            error: Some(ErrorObject {
+              code: 9999,
+              message: "Failed to deserialize object".to_string(),
+            }),
+            meta: None
+          })
+        }
+      };
+  
+      match response_object {
+        Ok(r) => r,
+        Err(err) => {
+          warn!("{}", err);
+          ResponseObject {
+            data: None,
+            error: Some(ErrorObject {
+              code: 9999,
+              message: format!("{}", err),
+            }),
+            meta: None,
+          }
         }
       }
-    }
   }
 }

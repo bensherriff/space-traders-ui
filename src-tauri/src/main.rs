@@ -29,7 +29,7 @@ fn main() {
     request: Request {
       client: Client::new(),
       base_url: "https://api.spacetraders.io/v2".to_string(),
-      max_attemps: 3
+      max_attemps: 5
     }
   };
 
