@@ -1,10 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::sync::Mutex;
+
 use diesel::{r2d2::{Pool, ConnectionManager}, SqliteConnection};
 use log::{error, info, LevelFilter};
 
 use data::{connection_pool};
+use models::system::System;
 use reqwest::Client;
 use tauri_plugin_log::LogTarget;
 
@@ -12,9 +15,18 @@ mod api;
 mod data;
 mod models;
 
+pub struct DataState {
+  pool: Pool<ConnectionManager<SqliteConnection>>,
+  client: Client,
+}
+
+pub struct SystemsState(Mutex<Vec<System>>);
+
 fn main() {
-  let pool: Pool<ConnectionManager<SqliteConnection>> = connection_pool();
-  let client: Client = Client::new();
+  let state = DataState {
+    pool: connection_pool(),
+    client: Client::new()
+  };
 
   match tauri::Builder::default()
     .plugin(tauri_plugin_log::Builder::default()
@@ -30,8 +42,8 @@ fn main() {
       .build())
     .plugin(tauri_plugin_store::Builder::default().build())
     .plugin(tauri_plugin_sql::Builder::default().build())
-    .manage(pool)
-    .manage(client)
+    .manage(state)
+    .manage(SystemsState(Default::default()))
     .setup(|app| {
       data::init(&connection_pool(), app);
       Ok(())
