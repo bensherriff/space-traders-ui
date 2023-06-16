@@ -1,10 +1,14 @@
+use core::time;
+use std::thread;
+
 use diesel::{SqliteConnection, r2d2::{ConnectionManager, Pool}};
+use log::info;
 use reqwest::Client;
 use tauri::State;
 
 use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, data::system::{insert_system, insert_waypoint}};
 
-use super::{requests::{ResponseObject, get_request, handle_result, ErrorObject}, fleet::get_ships_at_waypoint};
+use super::{requests::{ResponseObject, get_request, handle_result, ErrorObject}};
 
 /// Return a list of all systems.
 #[tauri::command]
@@ -25,6 +29,55 @@ pub async fn list_systems(client: State<'_, Client>, pool: State<'_, Pool<Connec
     None => {}
   };
   Ok(result)
+}
+
+#[tauri::command]
+pub async fn load_all_systems(client: State<'_, Client>, pool: State<'_, Pool<ConnectionManager<SqliteConnection>>>, token: String) -> Result<ResponseObject<Vec<System>>, ()> {
+  info!("load_all_systems");
+  let limit: u64 = 20;
+  let _client = client.to_owned();
+  let _pool = pool.to_owned();
+  let _token = token.to_owned();
+  let result = list_systems(_client, _pool, _token, limit, 1).await;
+  let max_page = match &result {
+    Ok(r) => {
+      match &r.meta {
+        Some(d) => {
+          (d.total as f64 / limit as f64).ceil() as u64
+        }
+        None => 2
+      }
+    }
+    Err(_err) => 2
+  };
+  println!("max pages {}", max_page);
+  for page in 2..max_page {
+    let mut attempts = 3;
+    while attempts > 0 {
+      let _client = client.to_owned();
+      let _pool = pool.to_owned();
+      let _token = token.to_owned();
+      let result = list_systems(_client, _pool, _token, limit, page).await;
+      match result {
+        Ok(r) => {
+          match &r.error {
+            Some(error) => {
+              println!("{:#?}", &error);
+              if error.code == 429 && attempts > 0 {
+                thread::sleep(time::Duration::from_secs(1));
+                attempts = attempts - 1;
+              } else {
+                break;
+              }
+            }
+            None => break
+          }
+        }
+        Err(_err) => {}
+      }; 
+    }
+  }
+  Ok(ResponseObject { data: Some(crate::data::system::get_all_systems(&pool)), error: None, meta: None })
 }
 
 /// Get the details of a system.

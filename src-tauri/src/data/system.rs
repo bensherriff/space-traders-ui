@@ -10,7 +10,7 @@ use crate::models::trait_type::TraitType;
 use crate::models::transaction::{Transaction, TransactionType};
 use crate::models::waypoint::{WaypointType, Waypoint, WaypointTrait};
 
-use diesel::{prelude::*, insert_into, replace_into};
+use diesel::{prelude::*, replace_into};
 use diesel::{RunQueryDsl, QueryDsl, insert_or_ignore_into, SqliteConnection, r2d2::{Pool, ConnectionManager}};
 
 pub fn get_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbol: &str) -> Option<System> {
@@ -36,9 +36,41 @@ pub fn get_system(pool: &Pool<ConnectionManager<SqliteConnection>>, system_symbo
           y: r.y,
           waypoints: get_system_waypoints(pool, system_symbol),
           factions: system_factions
-        }) 
+        })
       }
       Err(_err) => None
+    }
+}
+
+pub fn get_all_systems(pool: &Pool<ConnectionManager<SqliteConnection>>) -> Vec<System> {
+  use schema::systems;
+
+  let mut connection = pool.get().unwrap();
+  let result: Result<Vec<SystemDB>, diesel::result::Error> = systems::table
+    .select(SystemDB::as_select())
+    .load(&mut connection);
+  match result {
+      Ok(r) => {
+        let mut _systems: Vec<System> = vec![];
+        for system in r.iter() {
+          let mut system_factions: Vec<SymbolResponse> = vec![];
+          for (_index, faction_symbol) in system.factions.split(",").filter(|&x| !x.is_empty()).enumerate() {
+            system_factions.push(SymbolResponse { symbol: faction_symbol.to_string() })
+          }
+
+          _systems.push(System {
+            symbol: system.system_symbol.to_string(),
+            sector_symbol: system.sector_symbol.to_string(),
+            system_type: SystemType::from_str(&system.system_type).unwrap(),
+            x: system.x,
+            y: system.y,
+            waypoints: get_system_waypoints(pool, &system.system_symbol),
+            factions: system_factions
+          });
+        }
+        _systems
+      }
+      Err(_err) => vec![]
     }
 }
 

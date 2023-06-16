@@ -6,6 +6,8 @@ import Ship from "./routes/ship";
 import System from "./routes/system";
 import Waypoint from "./routes/waypoint";
 import Faction from "./routes/faction";
+import Galaxy from "./routes/galaxy";
+import Contracts from "./routes/contracts";
 import "./index.css";
 import {
   createBrowserRouter,
@@ -37,6 +39,14 @@ const router = createBrowserRouter([
       {
         path: "faction/:factionId",
         element: <Faction/>
+      },
+      {
+        path: "galaxy",
+        element: <Galaxy/>
+      },
+      {
+        path: "contracts",
+        element: <Contracts/>
       }
     ]
   }
