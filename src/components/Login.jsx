@@ -161,7 +161,3 @@ function LoginLogo({ link, src, alt }) {
     </a>
   )
 }
-
-Login.propTypes = {
-  setAgent: PropTypes.func.isRequired
-}
