@@ -8,7 +8,6 @@ function classNames(...classes) {
 
 export default function ShipAutoComplete({ ships = [], selectedShip = {}, setSelectedShip = () => {} }) {
   const [query, setQuery] = useState('')
-  // const [selectedShip, setSelectedShip] = useState(null)
 
   const filteredShips =
     query === ''
@@ -19,7 +18,6 @@ export default function ShipAutoComplete({ ships = [], selectedShip = {}, setSel
 
   return (
     <Combobox as="div" value={selectedShip} onChange={setSelectedShip}>
-      {/* <Combobox.Label className="block text-sm font-medium leading-6 text-gray-900">Assigned to</Combobox.Label> */}
       <div className="relative mt-2">
         <Combobox.Input
           className="w-full rounded-md border-0 bg-stone-800 py-1.5 pl-3 pr-10 text-white shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"

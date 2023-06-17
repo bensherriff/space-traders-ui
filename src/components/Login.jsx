@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { Storage, Text, State } from "../js";
 import { useNavigate } from "react-router-dom";
 import { useRecoilState} from "recoil";
+import Input from "./Form/Input";
 
 export default function Login() {
   const [agent, setAgent] = useRecoilState(State.agentState);
@@ -63,21 +64,21 @@ export default function Login() {
 
         <div className="flex flex-row items-center justify-center lg:justify-start relative">
           <form
-            className="w-full mr-2"
+            className="w-full mx-2"
             onSubmit={(e) => {
               e.preventDefault();
               connect();
             }}
           >
-            <input
-              className="peer block text-black ml-2 p-1 rounded w-full"
+            <Input
+              label="Token"
               type="password"
+              placeholder="Enter your token..."
+              errorMsg={errorMessage}
               value={token}
               onChange={(e) => setToken(e.currentTarget.value)}
-              placeholder="Enter your token..."
             />
-            <label className="absolute left-3">Access Token</label>
-            <button className="block ml-2 button mt-6 bg-gray-600" type="submit">Connect</button>
+            <button className="block button mt-6 bg-gray-600" type="submit">Connect</button>
           </form>
           <form
             className="w-full ml-2 mr-4"
