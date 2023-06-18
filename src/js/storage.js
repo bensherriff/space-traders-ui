@@ -1,3 +1,9 @@
+import { Store } from "tauri-plugin-store-api";
+import { localDataDir, sep } from '@tauri-apps/api/path';
+
+const localDataDirPath = await localDataDir();
+const store = new Store(`store.json`);
+
 /**
  * Retrieve the cached token.
  * @returns cached token
@@ -18,25 +24,22 @@ export function setToken(token) {
   setLocalStorage("token", token);
 }
 
-export function getSystems() {
-  const systems = getLocalStorage("systems");
+export async function getSystems() {
+  const systems = await store.get("systems");
   if (!systems) {
     return {};
   }
   return JSON.parse(systems);
 }
 
-export function hasSystems() {
-  const systems = getLocalStorage("systems");
-  if (systems) {
-    return true;
-  } else {
-    return false;
-  }
+export async function hasSystems() {
+  console.log('here', store.has("systems"));
+  await store.has("systems") || false;
 }
 
-export function setSystems(systems) {
-  setLocalStorage("systems", JSON.stringify(systems));
+export async function setSystems(systems) {
+  await store.set("systems", JSON.stringify(systems));
+  await store.save();
 }
 
 export function getLocalStorage(key) {

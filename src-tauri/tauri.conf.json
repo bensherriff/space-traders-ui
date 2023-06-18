@@ -18,7 +18,10 @@
         "open": true
       },
       "fs": {
-        "scope": ["$RESOURCE/*"]
+        "scope": ["$RESOURCE/*", "APPLOCALDATA/*"]
+      },
+      "path": {
+        "all": true
       }
     },
     "bundle": {

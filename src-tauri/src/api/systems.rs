@@ -1,6 +1,8 @@
+use log::warn;
 use tauri::State;
+use tauri_plugin_store::StoreBuilder;
 
-use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, DataState, SystemsState};
+use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, DataState, SystemsState, Systems, data::get_store_path};
 
 use super::{requests::{ResponseObject}};
 
@@ -26,9 +28,17 @@ pub async fn list_systems(state: State<'_, DataState>, token: String, limit: u64
 }
 
 #[tauri::command]
-pub async fn load_all_systems(state: State<'_, DataState>, _system_state: State<'_, SystemsState>, token: String) -> Result<ResponseObject<Vec<System>>, ()> {
+pub async fn load_all_systems(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String) -> Result<ResponseObject<Vec<System>>, ()> {
   let mut _state = state;
   let systems_count = crate::data::system::get_systems_count(&_state.pool);
+  let mut _store = StoreBuilder::new(app_handle, get_store_path()).build();
+  match _store.load() {
+    Ok(_) => {}
+    Err(err) => {
+      warn!("Error loading store: {:?}", err);
+    }
+  };
+  const SYSTEM_STRING: &str = "systems";
 
   let limit: u64 = 20;
   let _st = _state.to_owned();
@@ -48,8 +58,21 @@ pub async fn load_all_systems(state: State<'_, DataState>, _system_state: State<
     Err(_err) => 2
   };
 
-  // TODO future handling, https://users.rust-lang.org/t/future-cannot-be-sent-between-threads-safely-when-use-vector-of-functions-inside-thread/77126/2
-  // let mut s = system_state.0.lock().unwrap();
+  if _store.has(SYSTEM_STRING) {
+    let _value = _store.get(SYSTEM_STRING).unwrap().to_owned();
+    let _systems: Vec<System> = match serde_json::from_value(_value) {
+      Ok(s) => s,
+      Err(_err) => vec![]
+    };
+    if _systems.len() as u64 == total_records {
+      return Ok(ResponseObject {
+        data: Some(_systems),
+        error: None,
+        meta: None
+      });
+    }
+  }
+
   let mut systems: Vec<System> = vec![];
   if (systems_count as u64) < total_records {
     for page in 1..(total_pages + 1) {
@@ -82,13 +105,24 @@ pub async fn load_all_systems(state: State<'_, DataState>, _system_state: State<
         Err(_err) => {}
       };
     }
-    // *s = systems.to_owned();
   } else {
     for i in (1..systems_count).step_by(1000) {
       systems.append(&mut crate::data::system::get_all_systems(&_state.pool, Some(i as i32), Some((i + 999) as i32)));
     }
-    // *s = systems.to_owned();
   }
+  let _systems = systems.to_owned();
+    match _store.insert(SYSTEM_STRING.to_string(), serde_json::json!(_systems)) {
+      Ok(_) => {
+        match _store.save() {
+          Ok(_) => {}
+          Err(_err) => {
+            warn!("Error saving store: {:?}", _err);
+          }
+        };
+      },
+      Err(err) => warn!("Error storing systems {:?}", err)
+    }
+
   Ok(ResponseObject { data: Some(systems), error: None, meta: None })
 }
 

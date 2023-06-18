@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 
-#[derive(Queryable, Selectable)]
+#[derive(Queryable, Selectable, QueryableByName)]
 #[diesel(table_name = crate::data::schema::systems)]
 pub struct SystemDB {
   pub rowid: i32,

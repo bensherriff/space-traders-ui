@@ -1,4 +1,10 @@
+import { useEffect } from "react"
+import { Storage } from "../js";
+
 export default function Contracts() {
+
+  useEffect(() => {
+  }, []);
 
   return (
     <div>

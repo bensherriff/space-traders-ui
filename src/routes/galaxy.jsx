@@ -10,18 +10,14 @@ export default function Galaxy() {
   }, []);
 
   async function get_all_systems() {
-    if (Storage.hasSystems()) {
-      setSystems(Storage.getSystems());
-    } else {
-      invoke("load_all_systems", { token: Storage.getToken() }).then(response => {
-        if (response && response.data) {
-          Storage.setSystems(response.data);
-          setSystems(response.data);
-        } else if (response && response.error) {
-          console.error(response.error.message);
-        }
-      });
-    }
+    invoke("load_all_systems", { token: Storage.getToken() }).then(async response => {
+      if (response && response.data) {
+        console.log(response.data);
+        setSystems(response.data);
+      } else if (response && response.error) {
+        console.error(response.error.message);
+      }
+    });
   }
 
   return (

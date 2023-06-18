@@ -7,7 +7,7 @@ use api::requests::Request;
 use diesel::{r2d2::{Pool, ConnectionManager}, SqliteConnection};
 use log::{error, info, LevelFilter};
 
-use data::{connection_pool};
+use data::connection_pool;
 use models::system::System;
 use reqwest::Client;
 use tauri_plugin_log::LogTarget;
@@ -18,10 +18,15 @@ mod models;
 
 pub struct DataState {
   pool: Pool<ConnectionManager<SqliteConnection>>,
-  request: Request,
+  request: Request
 }
 
-pub struct SystemsState(Mutex<Vec<System>>);
+#[derive(Default)]
+pub struct Systems {
+  pub systems: Vec<System>
+}
+
+pub struct SystemsState(Mutex<Systems>);
 
 fn main() {
   let state = DataState {
