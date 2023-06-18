@@ -3,10 +3,10 @@ import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 export default function Input({ label="", type="text", placeholder="", errorMsg="", value="", onChange=(e) => { e.preventDefault()} }) {
   return (
     <>
-      <label htmlFor="text" className="block text-sm font-medium leading-6 text-gray-300">
+      <label htmlFor="text" className="block text-sm font-medium leading-6 text-gray-300 text-left">
         {label}
       </label>
-      <div className="relative mt-2 rounded-md shadow-sm">
+      <div className="relative mt-1 rounded-md shadow-sm">
         <input
           type={type}
           name={type}

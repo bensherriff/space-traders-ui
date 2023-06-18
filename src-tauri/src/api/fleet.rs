@@ -277,9 +277,13 @@ pub async fn scan_ships(state: State<'_, DataState>, token: String, symbol: Stri
 
 /// Refuel your ship from the local market.
 #[tauri::command]
-pub async fn refuel_ship(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<RefuelResponse>, ()> {
+pub async fn refuel_ship(state: State<'_, DataState>, token: String, symbol: String, units: Option<i32>) -> Result<ResponseObject<RefuelResponse>, ()> {
   let url = format!("/my/ships/{}/refuel", symbol);
-  let result = state.request.post_request::<RefuelResponse>(token, url, None).await;
+  let body = match units {
+    Some(u) => Some(serde_json::json!({ "units": u }).to_string()),
+    None => None
+  };
+  let result = state.request.post_request::<RefuelResponse>(token, url, body).await;
   Ok(result)
 }
 

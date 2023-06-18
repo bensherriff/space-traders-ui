@@ -22,14 +22,27 @@ export function ErrorText({children}) {
   )
 }
 
-export function Button({className='', onClick=() => {}, children=(<></>), disabled=false}) {
+export function Button({type="button", onClick=() => {}, children=(<></>), disabled=false}) {
   if (disabled) {
     return (
-      <button disabled className={`${className} bg-stone-600 shadow-md rounded-xl m-1 p-1 text-white`} onClick={onClick}>{children}</button>
+      <button
+        type={type}
+        disabled
+        className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+        onClick={onClick}
+      >
+        {children}
+      </button>
     )
   } else {
     return (
-      <button className={`${className} bg-cyan-600 hover:bg-cyan-800 hover:text-black shadow-md rounded-xl m-1 p-1`} onClick={onClick}>{children}</button>
+      <button
+        type={type}
+        className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+        onClick={onClick}
+      >
+        {children}
+      </button>
     )
   }
 }

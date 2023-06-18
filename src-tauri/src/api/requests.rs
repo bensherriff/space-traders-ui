@@ -1,6 +1,6 @@
 use core::time;
 use std::thread;
-use log::warn;
+use log::{warn, trace};
 use reqwest::{Client, RequestBuilder};
 use serde::{de, Deserialize, Serialize};
 use serde_json::Value;
@@ -121,13 +121,13 @@ impl Request {
             }
             ResponseObjectEvent::GetObject(get_object) => {
               match &get_object.error {
-                Some(error) => warn!("{}", error.message),
+                Some(error) => trace!("{}", error.message),
                 None => {}
               };
               Ok(get_object)
             }
             ResponseObjectEvent::ErrorObject(error_object) => {
-              warn!("{}", error_object.message);
+              trace!("{}", error_object.message);
               Ok(ResponseObject {
                 data: None,
                 error: Some(error_object),

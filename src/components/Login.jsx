@@ -5,6 +5,7 @@ import { Storage, Text, State } from "../js";
 import { useNavigate } from "react-router-dom";
 import { useRecoilState} from "recoil";
 import Input from "./Form/Input";
+import { Button } from ".";
 
 export default function Login() {
   const [agent, setAgent] = useRecoilState(State.agentState);
@@ -78,7 +79,7 @@ export default function Login() {
               value={token}
               onChange={(e) => setToken(e.currentTarget.value)}
             />
-            <button className="block button mt-6 bg-gray-600" type="submit">Connect</button>
+            <Button type="submit">Submit</Button>
           </form>
           <form
             className="w-full ml-2 mr-4"
@@ -87,34 +88,31 @@ export default function Login() {
               register();
             }}
           >
-            <div className="relative mb-8">
-              <input
-                className="peer block text-black ml-2 p-1 rounded w-full"
-                value={name}
-                onChange={(e) => setName(e.currentTarget.value)}
-                placeholder="Between 3-14 characters"
-              />
-              <label className="absolute left-3">Name</label>
-            </div>
-            <div className="relative mb-8">
-              <input
-                className="peer block text-black ml-2 p-1 rounded w-full"
-                value={faction}
-                onChange={(e) => setFaction(e.currentTarget.value)}
-                placeholder="REPLACE TO DROPDOWN"
-              />
-              <label className="absolute left-3">Faction</label>
-            </div>
-            <div className="relative">
-              <input
-                className="peer block text-black ml-2 p-1 rounded w-full"
-                value={email}
-                onChange={(e) => setEmail(e.currentTarget.value)}
-                placeholder="For reserved names"
-              />
-              <label className="absolute left-3">Email</label>
-            </div>
-            <button className="block ml-2 button mt-6 bg-gray-600" type="submit">Register</button>
+            <Input
+              label="Name"
+              type="text"
+              placeholder="Between 3-14 characters"
+              errorMsg={errorMessage}
+              value={name}
+              onChange={(e) => setName(e.currentTarget.value)}
+            />
+            <Input
+              label="Faction"
+              type="text"
+              placeholder="CHANGE TO SELECT"
+              errorMsg={errorMessage}
+              value={name}
+              onChange={(e) => setFaction(e.currentTarget.value)}
+            />
+            <Input
+              label="Email"
+              type="text"
+              placeholder="For reserved names"
+              errorMsg={errorMessage}
+              value={email}
+              onChange={(e) => setEmail(e.currentTarget.value)}
+            />
+            <Button type="submit">Register</Button>
           </form>
         </div>
 
