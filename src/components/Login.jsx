@@ -10,10 +10,13 @@ import { Button } from ".";
 export default function Login() {
   const [agent, setAgent] = useRecoilState(State.agentState);
   const [token, setToken] = useState("");
+  const [tokenError, setTokenError] = useState("");
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState("");
   const [faction, setFaction] = useState("");
+  const [factionError, setFactionError] = useState("");
   const [email, setEmail] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [status, setStatus] = useState({});
   const navigate = useNavigate();
 
@@ -36,13 +39,13 @@ export default function Login() {
   async function get_my_agent() {
     await invoke("get_my_agent", { token: token }).then(response => {
       if (response.data) {
-        setErrorMessage("");
+        setTokenError("");
         setToken(token);
         Storage.setToken(token);
         setAgent(response.data);
         navigate("/fleet");
       } else if (response.error) {
-        setErrorMessage(response.error.message);
+        setTokenError(response.error.message);
       }
     });
   }
@@ -75,9 +78,12 @@ export default function Login() {
               label="Token"
               type="password"
               placeholder="Enter your token..."
-              errorMsg={errorMessage}
+              errorMsg={tokenError}
               value={token}
-              onChange={(e) => setToken(e.currentTarget.value)}
+              onChange={(e) => {
+                setTokenError("");
+                setToken(e.currentTarget.value);
+              }}
             />
             <Button type="submit">Submit</Button>
           </form>
@@ -92,31 +98,38 @@ export default function Login() {
               label="Name"
               type="text"
               placeholder="Between 3-14 characters"
-              errorMsg={errorMessage}
+              errorMsg={nameError}
               value={name}
-              onChange={(e) => setName(e.currentTarget.value)}
+              onChange={(e) => {
+                setNameError("");
+                setName(e.currentTarget.value);
+              }}
             />
             <Input
               label="Faction"
               type="text"
               placeholder="CHANGE TO SELECT"
-              errorMsg={errorMessage}
+              errorMsg={factionError}
               value={name}
-              onChange={(e) => setFaction(e.currentTarget.value)}
+              onChange={(e) => {
+                setFactionError("");
+                setFaction(e.currentTarget.value);
+              }}
             />
             <Input
               label="Email"
               type="text"
               placeholder="For reserved names"
-              errorMsg={errorMessage}
+              errorMsg={emailError}
               value={email}
-              onChange={(e) => setEmail(e.currentTarget.value)}
+              onChange={(e) => {
+                setEmailError("");
+                setEmail(e.currentTarget.value);
+              }}
             />
             <Button type="submit">Register</Button>
           </form>
         </div>
-
-        <p>{errorMessage}</p>
       </div>
       {status && status.announcements? (
         <div className="mt-4 mx-4 break-words">

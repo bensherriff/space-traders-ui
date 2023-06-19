@@ -96,7 +96,7 @@ fn main() {
       api::get_status,
       api::register,
       api::systems::list_systems,
-      api::systems::load_all_systems,
+      api::systems::list_all_systems,
       api::systems::get_system,
       api::systems::list_waypoints,
       api::systems::get_waypoint,

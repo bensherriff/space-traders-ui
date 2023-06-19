@@ -10,7 +10,7 @@ export default function Galaxy() {
   }, []);
 
   async function get_all_systems() {
-    invoke("load_all_systems", { token: Storage.getToken() }).then(async response => {
+    invoke("list_all_systems", { token: Storage.getToken() }).then(async response => {
       if (response && response.data) {
         console.log(response.data);
         setSystems(response.data);

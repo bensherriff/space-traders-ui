@@ -2,7 +2,7 @@ use log::warn;
 use tauri::State;
 use tauri_plugin_store::StoreBuilder;
 
-use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, DataState, SystemsState, Systems, data::get_store_path};
+use crate::{models::{system::{System, JumpGate}, waypoint::{Waypoint, WaypointType}, market::Market, shipyard::Shipyard}, DataState, SystemsState, Systems, data::get_store_path};
 
 use super::{requests::{ResponseObject}};
 
@@ -28,7 +28,7 @@ pub async fn list_systems(state: State<'_, DataState>, token: String, limit: u64
 }
 
 #[tauri::command]
-pub async fn load_all_systems(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String) -> Result<ResponseObject<Vec<System>>, ()> {
+pub async fn list_all_systems(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String) -> Result<ResponseObject<Vec<System>>, ()> {
   let mut _state = state;
   let systems_count = crate::data::system::get_systems_count(&_state.pool);
   let mut _store = StoreBuilder::new(app_handle, get_store_path()).build();
@@ -145,9 +145,79 @@ pub async fn get_system(state: State<'_, DataState>, token: String, system: Stri
   }
 }
 
-pub async fn get_path_between_systems(state: State<'_, DataState>, start_system: String, end_system: String) -> Result<ResponseObject<Vec<System>>, ()> {
+#[tauri::command]
+pub async fn get_path_to_system(state: State<'_, DataState>, token: String, start_symbol: String, end_symbol: String) -> Result<ResponseObject<Vec<System>>, ()> {
+  let _state = state.to_owned();
+  let _token = token.to_owned();
+  let start_system = get_system(_state, _token, start_symbol).await;
+  match start_system {
+    Ok(response) => {
+      match &response.data {
+        Some(s) => {
+          let mut systems: Vec<System> = vec![s.to_owned()];
+          while systems.len() > 0 {
+            let system = systems.pop().unwrap();
+            if system.symbol == end_symbol {
+              return Ok(ResponseObject { data: None, error: None, meta: None });
+            } else {
+              let _state = state.to_owned();
+              let _token = token.to_owned();
+              let waypoints = system.waypoints.to_owned();
+              for waypoint in waypoints.iter() {
+                if matches!(waypoint.waypoint_type, WaypointType::JumpGate) {
+                  let _state = state.to_owned();
+                  let _token = token.to_owned();
+                  let jump_gate = get_jump_gate(_state, _token, system.symbol.to_owned(), waypoint.symbol.to_owned()).await;
+                  match jump_gate {
+                    Ok(response) => {
+                      match &response.data {
+                        Some(jump_gate) => {
+                          for jump_gate_system in jump_gate.connected_systems.iter() {
+                            let _state = state.to_owned();
+                            let _token = token.to_owned();
+                            match get_system(_state, _token, jump_gate_system.symbol.to_owned()).await {
+                              Ok(response) => {
+                                match &response.data {
+                                  Some(system) => {
+                                    systems.push(system.to_owned());
+                                  }
+                                  None => {}
+                                }
+                              }
+                              Err(err) => warn!("Error getting system: {:?}", err)
+                            };
+                          }
+                        }
+                        None => {}
+                      }
+                    }
+                    Err(err) => warn!("Error getting jump gate: {:?}", err)
+                  }
+                }
+                
+              }
+            }
+          }
+        }
+        None => {}
+      }
+    }
+    Err(err) => warn!("Error getting system: {:?}", err)
+  }
+  // let end_system = get_system(state, token, end_symbol).await;
   Ok(ResponseObject { data: None, error: None, meta: None })
 }
+
+pub fn create_system_digraph(state: State<'_, DataState>) -> Result<ResponseObject<()>, ()> {
+  let _state = state.to_owned();
+  let systems = crate::data::system::get_all_systems(&_state.pool, None, None);
+  let mut graph = petgraph::Graph::<String, u32>::new();
+  for system in systems {
+    graph.add_node(system.symbol);
+  }
+  Ok(ResponseObject { data: None, error: None, meta: None })
+}
+
 
 /// Return a list of all waypoints.
 #[tauri::command]
