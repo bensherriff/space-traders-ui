@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { invoke } from "@tauri-apps/api/tauri";
 import { Storage } from '../js';
+import SymbolAutoComplete from '../components/Form/SymbolAutoComplete';
 
 export default function Galaxy() {
   const [systems, setSystems] = useState(null);
+  const [selectedSystem, setSelectedSystem] = useState("");
 
   useEffect(() => {
     get_all_systems();
@@ -12,8 +14,8 @@ export default function Galaxy() {
   async function get_all_systems() {
     invoke("list_all_systems", { token: Storage.getToken() }).then(async response => {
       if (response && response.data) {
-        console.log(response.data);
         setSystems(response.data);
+        setSelectedSystem(response.data[0]);
       } else if (response && response.error) {
         console.error(response.error.message);
       }
@@ -26,7 +28,9 @@ export default function Galaxy() {
       {!systems? (
         <>If this is your first time seeing this message, it may take up to 5 minutes to completely populate the galaxy due to rate limits. Please wait... </>
       ):
-      <>Load complete!</>
+      <>
+      <SymbolAutoComplete items={systems} selectedItem={selectedSystem} setSelectedItem={setSelectedSystem} />
+      </>
       }
     </div>
   )

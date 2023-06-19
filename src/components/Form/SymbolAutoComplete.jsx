@@ -6,18 +6,18 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
 }
 
-export default function ShipAutoComplete({ ships = [], selectedShip = {}, setSelectedShip = () => {} }) {
+export default function SymbolAutoComplete({ items = [], selectedItem = {}, setSelectedItem = () => {} }) {
   const [query, setQuery] = useState('')
 
-  const filteredShips =
+  const filteredItems =
     query === ''
-      ? ships
-      : ships.filter((s) => {
+      ? items
+      : items.filter((s) => {
           return s.symbol.toLowerCase().includes(query.toLowerCase())
         })
 
   return (
-    <Combobox as="div" value={selectedShip} onChange={setSelectedShip}>
+    <Combobox as="div" value={selectedItem} onChange={setSelectedItem}>
       <div className="relative mt-2">
         <Combobox.Input
           className="w-full rounded-md border-0 bg-stone-800 py-1.5 pl-3 pr-10 text-white shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
@@ -28,9 +28,9 @@ export default function ShipAutoComplete({ ships = [], selectedShip = {}, setSel
         <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
         </Combobox.Button>
 
-        {filteredShips.length > 0 && (
+        {filteredItems.length > 0 && (
           <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-stone-700 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-            {filteredShips.map((s) => (
+            {filteredItems.map((s) => (
               <Combobox.Option
                 key={s.symbol}
                 value={s}

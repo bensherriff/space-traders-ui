@@ -7,7 +7,7 @@ import Tag from '../components/Tag';
 import { NavLink } from "react-router-dom";
 import { WaypointHeader } from '../components/Location/LocationHeader';
 import { Button } from '../components';
-import ShipAutoComplete from '../components/Form/ShipAutoComplete';
+import SymbolAutoComplete from '../components/Form/SymbolAutoComplete';
 
 export default function Waypoint() {
   const {systemId, waypointId} = useParams();
@@ -134,7 +134,7 @@ export default function Waypoint() {
             </>
           ): <></>}
           <div className='flex'>
-            <div className='w-full'>
+            <div className='w-full mr-1'>
               {waypoint.type == 'JUMP_GATE'? (
                 <Button onClick={toggleJumpGate}>Jump Gate</Button>
               ): <></>}
@@ -154,19 +154,21 @@ export default function Waypoint() {
                 <Shipyard systemId={systemId} waypointId={waypointId}/>
               ): <></>}
             </div>
-            <div className='w-full h-full'>
+            <div className='w-full h-full ml-1'>
               {currentShip? (
                 <>
-                  <ShipAutoComplete ships={localShips} selectedShip={currentShip} setSelectedShip={setCurrentShip} />
+                  <h1 className='text-center text-2xl'>Current Ship</h1>
+                  <SymbolAutoComplete items={localShips} selectedItem={currentShip} setSelectedShip={setCurrentShip} />
                   <NavLink to={`/fleet/${currentShip.symbol}`}>Ship Info</NavLink>
                 </>
               ): <></>}
               {otherShip? (
-                <div>
-                  other ships
-                    <ShipAutoComplete ships={otherShips} selectedShip={otherShip} setSelectedShip={setOtherShip}/>
-                    <NavLink to={`/fleet/${otherShip.symbol}`}>Ship Info</NavLink>
-                </div>
+                <>
+                  <hr className='my-4'/>
+                  <h1 className='text-center text-2xl'>Remote Ships</h1>
+                  <SymbolAutoComplete items={otherShips} selectedItem={otherShip} setSelectedShip={setOtherShip}/>
+                  <NavLink to={`/fleet/${otherShip.symbol}`}>Ship Info</NavLink>
+                </>
               ): <></>}
             </div>
           </div>
