@@ -104,6 +104,28 @@ export default function Waypoint() {
     setJumpGateToggle(!jumpGateToggle);
   }
 
+  async function orbit_ship({ship={}, setShip=() => {}}) {
+    invoke("orbit_ship", { token: Storage.getToken(), symbol: ship.symbol}).then(response => {
+      if (response && response.data) {
+        setShip({
+          ...ship,
+          nav: response.data.nav
+        });
+      }
+    });
+  }
+  
+  async function dock_ship({ship={}, setShip=() => {}}) {
+    invoke("dock_ship", { token: Storage.getToken(), symbol: ship.symbol}).then(response => {
+      if (response && response.data) {
+        setShip({
+          ...ship,
+          nav: response.data.nav
+        });
+      }
+    });
+  }
+
   return (
     <div>
       {waypoint? (
@@ -160,14 +182,20 @@ export default function Waypoint() {
                   <h1 className='text-center text-2xl'>Current Ship</h1>
                   <SymbolAutoComplete items={localShips} selectedItem={currentShip} setSelectedShip={setCurrentShip} />
                   <NavLink to={`/fleet/${currentShip.symbol}`}>Ship Info</NavLink>
+                  <Button onClick={async () => { await orbit_ship(currentShip, setCurrentShip)}}>Orbit</Button>
                 </>
               ): <></>}
+              {currentShip && otherShip? ( <hr className='my-4'/> ): <></>}
               {otherShip? (
                 <>
-                  <hr className='my-4'/>
                   <h1 className='text-center text-2xl'>Remote Ships</h1>
                   <SymbolAutoComplete items={otherShips} selectedItem={otherShip} setSelectedShip={setOtherShip}/>
                   <NavLink to={`/fleet/${otherShip.symbol}`}>Ship Info</NavLink>
+                  {otherShip.nav.route.destination.symbol == waypointId? (<>
+                    <Button onClick={async () => { await dock_ship(otherShip, setOtherShip)}}>Dock</Button>
+                  </>): <>
+                    <Button onClick={() => {}}>Navigate Here</Button>
+                  </>}
                 </>
               ): <></>}
             </div>
