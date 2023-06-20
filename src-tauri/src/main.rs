@@ -47,7 +47,7 @@ fn main() {
       .level_for("tauri", LevelFilter::Info)
       .level_for("reqwest", LevelFilter::Info)
       .level_for("diesel", LevelFilter::Info)
-      .level_for("tao", LevelFilter::Info)
+      .level_for("tao", LevelFilter::Error)
       .level(LevelFilter::Debug)
       .build())
     .plugin(tauri_plugin_store::Builder::default().build())
@@ -93,6 +93,7 @@ fn main() {
       api::fleet::purchase_cargo,
       api::fleet::transfer_cargo,
       api::fleet::negotiate_contract,
+      api::fleet::navigate_ship_to_system,
       api::get_status,
       api::register,
       api::systems::list_systems,

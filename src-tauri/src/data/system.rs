@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
-use crate::data::models::{WaypointDB, NewWaypointDB, WaypointTraitDB, NewWaypointTraitDB, SystemWaypointDB, NewSystemWaypointDB, MarketDB, MarketTransactionsDB, MarketTradeGoodsDB, NewMarketDB, NewMarketTradeGoodsDB, NewMarketTransactionsDB};
+use crate::data::models::{WaypointDB, NewWaypointDB, WaypointTraitDB, NewWaypointTraitDB, SystemWaypointDB, NewSystemWaypointDB, MarketDB, MarketTransactionsDB, MarketTradeGoodsDB, NewMarketDB, NewMarketTradeGoodsDB, NewMarketTransactionsDB, NewJumpGateDB, JumpGateDB};
 use crate::models::SymbolResponse;
 use crate::models::chart::Chart;
 use crate::models::market::{Market, MarketItem, MarketItemType, TradeGood, SupplyType};
-use crate::models::system::{System, SystemWaypoint, SystemType};
+use crate::models::system::{System, SystemWaypoint, SystemType, JumpGate, ConnectedSystem};
 use crate::data::{models::{SystemDB, NewSystemDB}, schema};
 use crate::models::trait_type::TraitType;
 use crate::models::transaction::{Transaction, TransactionType};
@@ -512,5 +512,66 @@ pub fn insert_market(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoint_
       }
     }
     None => {}
+  }
+}
+
+pub fn get_jump_gate(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoint_symbol: &str) -> Option<JumpGate> {
+  use schema::jump_gates;
+
+  let mut connection = pool.get().unwrap();
+  let result: Result<Vec<JumpGateDB>, diesel::result::Error> = jump_gates::table
+    .filter(jump_gates::symbol.eq(waypoint_symbol))
+    .select(JumpGateDB::as_select())
+    .load(&mut connection);
+
+  match result {
+    Ok(r) => {
+      if r.len() == 0 as usize {
+        return None;
+      }
+      let mut connected_systems: Vec<ConnectedSystem> = vec![];
+      for item in r.iter() {
+        connected_systems.push(ConnectedSystem {
+            symbol: item.connected_symbol.to_owned(),
+            sector_symbol: item.connected_sector_symbol.to_owned(),
+            system_type: SystemType::from_str(&item.connected_system_type).unwrap(),
+            faction_symbol: item.connected_faction_symbol.to_owned(),
+            x: item.connected_x,
+            y: item.connected_y,
+            distance: item.connected_distance,
+        });
+      }
+      Some(JumpGate {
+        jump_range: r[0].jump_range,
+        faction_symbol: r[0].faction_symbol.to_string(),
+        connected_systems
+      })
+    }
+    Err(_err) => None
+  }
+}
+
+pub fn insert_jump_gate(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoint_symbol: &str, jump_gate: &JumpGate) {
+  use schema::jump_gates;
+
+  let mut connection = pool.get().unwrap();
+  for connected_system in jump_gate.connected_systems.iter() {
+    let _jump_gate = NewJumpGateDB {
+        symbol: waypoint_symbol,
+        jump_range: jump_gate.jump_range,
+        faction_symbol: &jump_gate.faction_symbol,
+        connected_symbol: &connected_system.symbol,
+        connected_sector_symbol: &connected_system.sector_symbol,
+        connected_system_type: &connected_system.system_type.to_string(),
+        connected_faction_symbol: &connected_system.faction_symbol,
+        connected_x: connected_system.x,
+        connected_y: connected_system.y,
+        connected_distance: connected_system.distance
+    };
+  
+    insert_or_ignore_into(jump_gates::table)
+      .values(&_jump_gate)
+      .execute(&mut connection)
+      .expect("Error saving new jump gate");
   }
 }

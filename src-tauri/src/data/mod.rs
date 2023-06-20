@@ -2,7 +2,7 @@ use std::{fs::{create_dir_all}, path::{Path, PathBuf}, time::Duration};
 
 use diesel::{r2d2::{Pool, ConnectionManager, CustomizeConnection}, connection::SimpleConnection};
 use diesel::sqlite::SqliteConnection;
-use log::{warn, error};
+use log::warn;
 use tauri::{App, api::path::local_data_dir};
 use tauri_plugin_store::StoreBuilder;
 
@@ -50,9 +50,7 @@ pub fn init(pool: &Pool<ConnectionManager<SqliteConnection>>, app: &mut App) {
           let contents = std::fs::read_to_string(path).expect("Unable to read from file");
           match connection.batch_execute(&contents) {
             Ok(_) => {},
-            Err(err) => {
-              warn!("{:#?}", err);
-            }
+            Err(err) => warn!("{:#?}", err)
           };
         }
       }
@@ -125,9 +123,9 @@ pub fn get_store_path() -> PathBuf {
   Path::new(&data_dir()).join(STORE_FILE)
 }
 
-pub fn get_store_path_string() -> String {
-  match get_store_path().as_path().to_str() {
-    Some(path) => path.to_string(),
-    None => panic!("Error")
-  }
-}
+// pub fn get_store_path_string() -> String {
+//   match get_store_path().as_path().to_str() {
+//     Some(path) => path.to_string(),
+//     None => panic!("Error")
+//   }
+// }

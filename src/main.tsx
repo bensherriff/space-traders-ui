@@ -1,4 +1,3 @@
-import React from "react";
 import ReactDOM from "react-dom/client";
 import Root from "./Root";
 import Fleet from "./routes/fleet";
@@ -13,7 +12,6 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
-import store from "./js/state"
 import { RecoilRoot } from 'recoil'
 
 const router = createBrowserRouter([

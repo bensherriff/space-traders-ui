@@ -1,2 +1,2 @@
 -- This file should undo anything in `up.sql`
-DROP TABLE shipyard_ship_transactions
+DROP TABLE jump_gates

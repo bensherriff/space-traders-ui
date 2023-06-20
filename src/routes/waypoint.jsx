@@ -104,25 +104,32 @@ export default function Waypoint() {
     setJumpGateToggle(!jumpGateToggle);
   }
 
-  async function orbit_ship({ship={}, setShip=() => {}}) {
-    invoke("orbit_ship", { token: Storage.getToken(), symbol: ship.symbol}).then(response => {
+  async function orbit_ship() {
+    invoke("orbit_ship", { token: Storage.getToken(), symbol: currentShip.symbol}).then(response => {
       if (response && response.data) {
-        setShip({
-          ...ship,
-          nav: response.data.nav
-        });
+        setCurrentShip(null);
+        get_ships();
       }
     });
   }
   
-  async function dock_ship({ship={}, setShip=() => {}}) {
-    invoke("dock_ship", { token: Storage.getToken(), symbol: ship.symbol}).then(response => {
+  async function dock_ship() {
+    invoke("dock_ship", { token: Storage.getToken(), symbol: otherShip.symbol}).then(response => {
       if (response && response.data) {
-        setShip({
-          ...ship,
-          nav: response.data.nav
-        });
+        setOtherShip(null);
+        get_ships();
       }
+    });
+  }
+
+  async function navigate() {
+    invoke("navigate_ship_to_system", {
+      token: Storage.getToken(),
+      symbol: otherShip.symbol,
+      startSystem: otherShip.nav.route.departure.systemSymbol,
+      endSystem: systemId
+    }).then(response => {
+      console.log(response);
     });
   }
 
@@ -182,7 +189,7 @@ export default function Waypoint() {
                   <h1 className='text-center text-2xl'>Current Ship</h1>
                   <SymbolAutoComplete items={localShips} selectedItem={currentShip} setSelectedShip={setCurrentShip} />
                   <NavLink to={`/fleet/${currentShip.symbol}`}>Ship Info</NavLink>
-                  <Button onClick={async () => { await orbit_ship(currentShip, setCurrentShip)}}>Orbit</Button>
+                  <Button onClick={orbit_ship}>Orbit</Button>
                 </>
               ): <></>}
               {currentShip && otherShip? ( <hr className='my-4'/> ): <></>}
@@ -192,9 +199,9 @@ export default function Waypoint() {
                   <SymbolAutoComplete items={otherShips} selectedItem={otherShip} setSelectedShip={setOtherShip}/>
                   <NavLink to={`/fleet/${otherShip.symbol}`}>Ship Info</NavLink>
                   {otherShip.nav.route.destination.symbol == waypointId? (<>
-                    <Button onClick={async () => { await dock_ship(otherShip, setOtherShip)}}>Dock</Button>
+                    <Button onClick={dock_ship}>Dock</Button>
                   </>): <>
-                    <Button onClick={() => {}}>Navigate Here</Button>
+                    <Button onClick={navigate}>Navigate Here</Button>
                   </>}
                 </>
               ): <></>}

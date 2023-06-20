@@ -101,13 +101,13 @@ pub struct ScannedSystem {
   pub system_type: SystemType,
   pub x: i32,
   pub y: i32,
-  distance: u64
+  distance: i32
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JumpGate {
   #[serde(rename = "jumpRange")]
-  pub jump_range: u64,
+  pub jump_range: i32,
   #[serde(rename = "factionSymbol")]
   pub faction_symbol: String,
   #[serde(rename = "connectedSystems")]
@@ -125,5 +125,5 @@ pub struct ConnectedSystem {
   pub faction_symbol: String,
   pub x: i32,
   pub y: i32,
-  distance: u64
+  pub distance: i32
 }

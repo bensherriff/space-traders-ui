@@ -135,12 +135,13 @@ impl Request {
               })
             }
             _ => {
-              warn!("Unable to match ResponseObject");
+              let string = "Unable to match response object";
+              warn!("{}", string);
               Ok(ResponseObject {
                 data: None,
                 error: Some(ErrorObject {
                   code: 9999,
-                  message: "Unable to match response object".to_string(),
+                  message: string.to_string(),
                 }),
                 meta: None
               })
@@ -148,12 +149,13 @@ impl Request {
           }
         }
         Err(err) => {
-          warn!("Failed to deserialized object\n{}", err);
+          let string = "Failed to deserialize object";
+          warn!("{}: {}", string, err);
           Ok(ResponseObject {
             data: None,
             error: Some(ErrorObject {
               code: 9999,
-              message: "Failed to deserialize object".to_string(),
+              message: string.to_string(),
             }),
             meta: None
           })

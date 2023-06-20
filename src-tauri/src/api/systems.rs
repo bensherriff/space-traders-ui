@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 use log::warn;
+use petgraph::graph::NodeIndex;
 use tauri::State;
 use tauri_plugin_store::StoreBuilder;
 
-use crate::{models::{system::{System, JumpGate}, waypoint::{Waypoint, WaypointType}, market::Market, shipyard::Shipyard}, DataState, SystemsState, Systems, data::get_store_path};
+use crate::{models::{system::{System, JumpGate}, waypoint::{Waypoint, WaypointType}, market::Market, shipyard::Shipyard}, DataState, data::get_store_path};
 
 use super::{requests::{ResponseObject}};
 
@@ -146,55 +149,51 @@ pub async fn get_system(state: State<'_, DataState>, token: String, system: Stri
 }
 
 #[tauri::command]
-pub async fn get_path_to_system(state: State<'_, DataState>, token: String, start_symbol: String, end_symbol: String) -> Result<ResponseObject<Vec<System>>, ()> {
+pub async fn get_path_to_system(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, start_symbol: String, end_symbol: String) -> Result<ResponseObject<Vec<System>>, ()> {
+  println!("from {} to {}", start_symbol, end_symbol);
   let _state = state.to_owned();
   let _token = token.to_owned();
-  let start_system = get_system(_state, _token, start_symbol).await;
-  match start_system {
-    Ok(response) => {
-      match &response.data {
+
+  let mut graph = petgraph::Graph::<String, i32>::new();
+  let systems = list_all_systems(_state, app_handle, _token).await;
+  let mut checked_systems: HashMap<String, NodeIndex> = HashMap::new();
+  match systems {
+    Ok(r) => {
+      match &r.data {
         Some(s) => {
-          let mut systems: Vec<System> = vec![s.to_owned()];
-          while systems.len() > 0 {
-            let system = systems.pop().unwrap();
-            if system.symbol == end_symbol {
-              return Ok(ResponseObject { data: None, error: None, meta: None });
+          for system in s.iter() {
+            println!("nodes: {:?} edges: {:?}", graph.node_count(), graph.edge_count());
+            let current_system: NodeIndex;
+            if checked_systems.contains_key(system.symbol.as_str()) {
+              current_system = checked_systems.get(system.symbol.as_str()).unwrap().to_owned();
             } else {
-              let _state = state.to_owned();
-              let _token = token.to_owned();
-              let waypoints = system.waypoints.to_owned();
-              for waypoint in waypoints.iter() {
-                if matches!(waypoint.waypoint_type, WaypointType::JumpGate) {
-                  let _state = state.to_owned();
-                  let _token = token.to_owned();
-                  let jump_gate = get_jump_gate(_state, _token, system.symbol.to_owned(), waypoint.symbol.to_owned()).await;
-                  match jump_gate {
-                    Ok(response) => {
-                      match &response.data {
-                        Some(jump_gate) => {
-                          for jump_gate_system in jump_gate.connected_systems.iter() {
-                            let _state = state.to_owned();
-                            let _token = token.to_owned();
-                            match get_system(_state, _token, jump_gate_system.symbol.to_owned()).await {
-                              Ok(response) => {
-                                match &response.data {
-                                  Some(system) => {
-                                    systems.push(system.to_owned());
-                                  }
-                                  None => {}
-                                }
-                              }
-                              Err(err) => warn!("Error getting system: {:?}", err)
-                            };
+              current_system = graph.add_node(system.symbol.to_owned());
+              checked_systems.insert(system.symbol.to_owned(), current_system);
+            }
+            for waypoint in system.waypoints.iter() {
+              if matches!(waypoint.waypoint_type, WaypointType::JumpGate) {
+                let _state = state.to_owned();
+                let _token = token.to_owned();
+                match get_jump_gate(_state, _token, system.symbol.to_owned(), waypoint.symbol.to_owned()).await {
+                  Ok(j) => {
+                    match &j.data {
+                      Some(jump_gate) => {
+                        for connected_system in jump_gate.connected_systems.iter() {
+                          let next_system: NodeIndex;
+                          if checked_systems.contains_key(connected_system.symbol.as_str()) {
+                            next_system = checked_systems.get(connected_system.symbol.as_str()).unwrap().to_owned();
+                          } else {
+                            next_system = graph.add_node(connected_system.symbol.to_owned());
+                            checked_systems.insert(connected_system.symbol.to_owned(), next_system);
                           }
+                          graph.update_edge(current_system.to_owned(), next_system.to_owned(), connected_system.distance);
                         }
-                        None => {}
                       }
+                      None => {}
                     }
-                    Err(err) => warn!("Error getting jump gate: {:?}", err)
                   }
-                }
-                
+                  Err(err) => warn!("Error getting jump gate: {:?}", err)
+                };
               }
             }
           }
@@ -202,22 +201,13 @@ pub async fn get_path_to_system(state: State<'_, DataState>, token: String, star
         None => {}
       }
     }
-    Err(err) => warn!("Error getting system: {:?}", err)
-  }
-  // let end_system = get_system(state, token, end_symbol).await;
+    Err(_err) => warn!("Error getting systems: {:?}", _err)
+  };
+
+  println!("{:?}, {:?}", checked_systems.get(&start_symbol).unwrap(), checked_systems.get(&end_symbol).unwrap());
+  
   Ok(ResponseObject { data: None, error: None, meta: None })
 }
-
-pub fn create_system_digraph(state: State<'_, DataState>) -> Result<ResponseObject<()>, ()> {
-  let _state = state.to_owned();
-  let systems = crate::data::system::get_all_systems(&_state.pool, None, None);
-  let mut graph = petgraph::Graph::<String, u32>::new();
-  for system in systems {
-    graph.add_node(system.symbol);
-  }
-  Ok(ResponseObject { data: None, error: None, meta: None })
-}
-
 
 /// Return a list of all waypoints.
 #[tauri::command]
@@ -315,7 +305,18 @@ pub async fn get_shipyard(state: State<'_, DataState>, token: String, system: St
 /// Get jump gate details for a waypoint.
 #[tauri::command]
 pub async fn get_jump_gate(state: State<'_, DataState>, token: String, system: String, waypoint: String) -> Result<ResponseObject<JumpGate>, ()> {
-  let url = format!("/systems/{}/waypoints/{}/jump-gate", system, waypoint);
-  let result = state.request.get_request::<JumpGate>(token, url, None).await;
-  Ok(result)
+  match crate::data::system::get_jump_gate(&state.pool, &waypoint) {
+    Some(j) => {
+      Ok(ResponseObject { data: Some(j), error: None, meta: None })
+    }
+    None => {
+      let url = format!("/systems/{}/waypoints/{}/jump-gate", system, waypoint);
+      let result = state.request.get_request::<JumpGate>(token, url, None).await;
+      match &result.data {
+        Some(data) => crate::data::system::insert_jump_gate(&state.pool, &waypoint, data),
+        None => {}
+      };
+      Ok(result)
+    }
+  }
 }

@@ -1,6 +1,6 @@
 use tauri::State;
 
-use crate::{models::{ship::{Ship, ShipTransactionResponse, ShipType, navigation::{NavigationResponse, ShipJumpResponse, ShipNavigateResponse, FlightMode, Navigation}, cargo::{CargoRefinement, ExtractedCargo, CargoItem, Cargo, CargoResponse}, cooldown::Cooldown, ShipScanResponse, fuel::RefuelResponse}, survey::{SurveyResponse, Survey}, transaction::{TransactionResponse, Transaction}, system::SystemScanResponse, waypoint::WaypointScanResponse, contract::Contract, chart::ChartResponse}, data::fleet::insert_ship, DataState};
+use crate::{models::{ship::{Ship, ShipTransactionResponse, ShipType, navigation::{NavigationResponse, ShipJumpResponse, ShipNavigateResponse, FlightMode, Navigation}, cargo::{CargoRefinement, ExtractedCargo, CargoItem, Cargo, CargoResponse}, cooldown::Cooldown, ShipScanResponse, fuel::RefuelResponse}, survey::{SurveyResponse, Survey}, transaction::{TransactionResponse, Transaction}, system::SystemScanResponse, waypoint::WaypointScanResponse, contract::Contract, chart::ChartResponse}, data::{fleet::insert_ship}, DataState};
 
 use super::requests::{ResponseObject};
 
@@ -325,4 +325,12 @@ pub async fn negotiate_contract(state: State<'_, DataState>, token: String, symb
   let url = format!("/my/ships/{}/negotiate/contract", symbol);
   let result = state.request.post_request::<Contract>(token, url, None).await;
   Ok(result)
+}
+
+#[tauri::command]
+pub async fn navigate_ship_to_system(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, symbol: String, start_system: String, end_system: String) -> Result<(), ()> {
+  println!("{} navigating from {} to {}", symbol, start_system, end_system);
+  let path = crate::api::systems::get_path_to_system(state, app_handle, token, start_system, end_system).await;
+  println!("path: {:?}", path);
+  Ok(())
 }

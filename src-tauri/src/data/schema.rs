@@ -184,6 +184,21 @@ diesel::table! {
   }
 }
 
+diesel::table! {
+  jump_gates (symbol, connected_symbol) {
+    symbol -> Text,
+    jump_range -> Integer,
+    faction_symbol -> Text,
+    connected_symbol -> Text,
+    connected_sector_symbol -> Text,
+    connected_system_type -> Text,
+    connected_faction_symbol -> Text,
+    connected_x -> Integer,
+    connected_y -> Integer,
+    connected_distance -> Integer,
+  }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
   fleet,
   fleet_modules,
@@ -196,4 +211,5 @@ diesel::allow_tables_to_appear_in_same_query!(
   market_transactions,
   market_trade_goods,
   markets,
+  jump_gates,
 );

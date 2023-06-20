@@ -363,3 +363,33 @@ pub struct NewMarketTransactionsDB<'a> {
   pub total_price: i32,
   pub timestamp: &'a str,
 }
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::data::schema::jump_gates)]
+pub struct JumpGateDB {
+  pub symbol: String,
+  pub jump_range: i32,
+  pub faction_symbol: String,
+  pub connected_symbol: String,
+  pub connected_sector_symbol: String,
+  pub connected_system_type: String,
+  pub connected_faction_symbol: String,
+  pub connected_x: i32,
+  pub connected_y: i32,
+  pub connected_distance: i32,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::data::schema::jump_gates)]
+pub struct NewJumpGateDB<'a> {
+  pub symbol: &'a str,
+  pub jump_range: i32,
+  pub faction_symbol: &'a str,
+  pub connected_symbol: &'a str,
+  pub connected_sector_symbol: &'a str,
+  pub connected_system_type: &'a str,
+  pub connected_faction_symbol: &'a str,
+  pub connected_x: i32,
+  pub connected_y: i32,
+  pub connected_distance: i32,
+}
