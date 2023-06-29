@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use log::warn;
-use petgraph::{graph::NodeIndex, Graph};
+use petgraph::{graph::NodeIndex};
 use tauri::State;
 use tauri_plugin_store::StoreBuilder;
 
-use crate::{models::{system::{System, JumpGate}, waypoint::{Waypoint, WaypointType}, market::Market, shipyard::Shipyard}, DataState, data::get_store_path};
+use crate::{models::{system::{System, JumpGate}, waypoint::{Waypoint, WaypointType}, market::Market, shipyard::Shipyard}, DataState, data::get_store_path, api::requests::ErrorObject};
 
 use super::{requests::{ResponseObject}};
 
@@ -149,94 +149,84 @@ pub async fn get_system(state: State<'_, DataState>, token: String, system: Stri
 }
 
 #[tauri::command]
-pub async fn get_path_to_system(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, start_symbol: String, end_symbol: String) -> Result<ResponseObject<Vec<System>>, ()> {
-  println!("from {} to {}", start_symbol, end_symbol);
+pub async fn get_path_to_system(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, start_symbol: String, end_symbol: String) -> Result<ResponseObject<Vec<String>>, ()> {
+  if start_symbol == end_symbol {
+    return Ok(ResponseObject { data: Some(vec![]), error: None, meta: None });
+  }
   let _state = state.to_owned();
   let _token = token.to_owned();
   let _app_handle = app_handle.to_owned();
+  let _start_symbol = start_symbol.to_owned();
 
   let mut graph = petgraph::Graph::<String, i32>::new();
-  let systems = list_all_systems(_state, app_handle, _token).await;
-  match systems {
-    Ok(r) => {
-      match &r.data {
-        Some(s) => {
-          let mut checked_systems: HashMap<String, NodeIndex> = HashMap::new();
-          for system in s.iter() {
-            println!("nodes: {:?} edges: {:?}", graph.node_count(), graph.edge_count());
-            let current_system: NodeIndex;
-            if checked_systems.contains_key(system.symbol.as_str()) {
-              current_system = checked_systems.get(system.symbol.as_str()).unwrap().to_owned();
-            } else {
-              current_system = graph.add_node(system.symbol.to_owned());
-              checked_systems.insert(system.symbol.to_owned(), current_system);
-            }
-            for waypoint in system.waypoints.iter() {
-              if matches!(waypoint.waypoint_type, WaypointType::JumpGate) {
-                let _state = state.to_owned();
-                let _token = token.to_owned();
-                match get_jump_gate(_state, _token, system.symbol.to_owned(), waypoint.symbol.to_owned()).await {
-                  Ok(j) => {
-                    match &j.data {
-                      Some(jump_gate) => {
-                        for connected_system in jump_gate.connected_systems.iter() {
-                          let next_system: NodeIndex;
-                          if checked_systems.contains_key(connected_system.symbol.as_str()) {
-                            next_system = checked_systems.get(connected_system.symbol.as_str()).unwrap().to_owned();
-                          } else {
-                            next_system = graph.add_node(connected_system.symbol.to_owned());
-                            checked_systems.insert(connected_system.symbol.to_owned(), next_system);
-                          }
-                          graph.update_edge(current_system.to_owned(), next_system.to_owned(), connected_system.distance);
-                        }
-                      }
-                      None => {}
+  let start_system = match get_system(_state, _token, start_symbol).await.unwrap().data {
+    Some(s) => s,
+    None => return Ok(ResponseObject { data: None, error: None, meta: None })
+  };
+
+  let mut checked_systems: HashMap<String, NodeIndex> = HashMap::new();
+  let mut systems = vec![start_system];
+  let mut searching_for_end_system = false;
+  while !systems.is_empty() {
+    let system = systems.pop().unwrap();
+    let current_system_node: NodeIndex;
+    if checked_systems.contains_key(system.symbol.as_str()) {
+      current_system_node = checked_systems.get(system.symbol.as_str()).unwrap().to_owned();
+    } else {
+      current_system_node = graph.add_node(system.symbol.to_owned());
+      checked_systems.insert(system.symbol.to_owned(), current_system_node);
+    }
+    for waypoint in system.waypoints.iter() {
+      if matches!(waypoint.waypoint_type, WaypointType::JumpGate) {
+        let _state = state.to_owned();
+        let _token = token.to_owned();
+        match get_jump_gate(_state, _token, system.symbol.to_owned(), waypoint.symbol.to_owned()).await {
+          Ok(j) => {
+            match &j.data {
+              Some(jump_gate) => {
+                for connected_system in jump_gate.connected_systems.iter() {
+                  let next_system_node: NodeIndex;
+                  if checked_systems.contains_key(connected_system.symbol.as_str()) {
+                    next_system_node = checked_systems.get(connected_system.symbol.as_str()).unwrap().to_owned();
+                  } else {
+                    let _state = state.to_owned();
+                    let _token = token.to_owned();
+                    next_system_node = graph.add_node(connected_system.symbol.to_owned());
+                    checked_systems.insert(connected_system.symbol.to_owned(), next_system_node);
+                    if !searching_for_end_system {
+                      let _system = get_system(_state, _token, connected_system.symbol.to_owned()).await.unwrap().data.unwrap();
+                      systems.push(_system);
                     }
                   }
-                  Err(err) => warn!("Error getting jump gate: {:?}", err)
-                };
+                  graph.update_edge(current_system_node.to_owned(), next_system_node.to_owned(), connected_system.distance);
+                  if connected_system.symbol == end_symbol {
+                    searching_for_end_system = true;
+                  }
+                }
               }
+              None => {}
             }
           }
+          Err(err) => warn!("Error getting jump gate: {:?}", err)
         }
-        None => {}
       }
     }
-    Err(err) => warn!("Error getting systems: {:?}", err)
-  };
+  }
 
-  let mut _store = StoreBuilder::new(_app_handle, get_store_path()).build();
-  match _store.load() {
-    Ok(_) => {}
-    Err(err) => {
-      warn!("Error loading store: {:?}", err);
+  let start_system_node = checked_systems.get(&_start_symbol).unwrap().to_owned();
+  let end_system_node = checked_systems.get(&end_symbol).unwrap().to_owned();
+  let path = petgraph::algo::astar(&graph, start_system_node.to_owned(), |finish| finish == end_system_node.to_owned(), |e| *e.weight(), |_| 0);
+  match path {
+    Some(p) => {
+      let mut path_systems = vec![];
+      for node in p.1.iter() {
+        let system_symbol = graph.node_weight(*node).unwrap().to_owned();
+        path_systems.push(system_symbol);
+      }
+      return Ok(ResponseObject { data: Some(path_systems), error: None, meta: None })
     }
-  };
-
-  println!("{:?}", graph);
-  // const SYSTEMS_PATH_STRING: &str = "systems_path";
-  // let t = serde_json::to_string(&graph);
-  // let v = serde_json::to_value(&graph).unwrap();
-  // match _store.insert(SYSTEMS_PATH_STRING.to_string(), v) {
-  //   Ok(_) => {
-  //     match _store.save() {
-  //       Ok(_) => {}
-  //       Err(_err) => {
-  //         warn!("Error saving store: {:?}", _err);
-  //       }
-  //     };
-  //   },
-  //   Err(err) => warn!("Error storing systems {:?}", err)
-  // }
-  // let _value = _store.get(SYSTEMS_PATH_STRING).unwrap().to_owned();
-  // let _graph: petgraph::Graph::<String, i32> = match serde_json::from_value(_value) {
-  //   Ok(s) => s,
-  //   Err(_err) => vec![]
-  // };
-
-  // println!("{:?}, {:?}", checked_systems.get(&start_symbol).unwrap(), checked_systems.get(&end_symbol).unwrap());
-  
-  Ok(ResponseObject { data: None, error: None, meta: None })
+    None => return Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 9000, message: "No path found".to_string() }), meta: None })
+  }
 }
 
 /// Return a list of all waypoints.

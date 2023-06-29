@@ -1,4 +1,5 @@
 use tauri::State;
+use chrono::{DateTime, Local};
 
 use crate::{models::{status::Status, agent::{NewAgent, NewAgentResponse}}, DataState};
 
@@ -26,4 +27,10 @@ pub async fn register(state: State<'_, DataState>, faction: String, symbol: Stri
   };
   let result = state.request.post_request::<NewAgentResponse>("".to_string(), "/register".to_string(), Some(serde_json::to_string(&new_agent).unwrap())).await;
   Ok(result)
+}
+
+pub fn calculate_timeout(start_time: String, end_time: String) -> i64 {
+  let start = DateTime::parse_from_rfc3339(&start_time).unwrap();
+  let end = DateTime::parse_from_rfc3339(&end_time).unwrap();
+  end.timestamp() - std::cmp::min(start.timestamp(), Local::now().timestamp())
 }

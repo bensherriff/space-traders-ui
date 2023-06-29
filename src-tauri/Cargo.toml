@@ -26,6 +26,7 @@ tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", br
 petgraph = "0.6.3"
 strum = "0.25.0"
 strum_macros = "0.25.0"
+chrono = "0.4.26"
 
 [dependencies.tauri-plugin-sql]
 git = "https://github.com/tauri-apps/plugins-workspace"

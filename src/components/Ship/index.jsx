@@ -212,7 +212,7 @@ export function Navigation({ship, updateShip}) {
   async function navigate_ship(e) {
     e.preventDefault();
     const destination = e.target['select-system'].value;
-    invoke("navigate_ship", { token: Storage.getToken(), symbol: ship.symbol, waypoint: destination}).then(response => {
+    invoke("navigate_ship", { token: Storage.getToken(), symbol: ship.symbol, waypoint: destination, system: ship.nav.systemSymbol}).then(response => {
       if (response && response.data) {
         updateShip({
           ...ship,

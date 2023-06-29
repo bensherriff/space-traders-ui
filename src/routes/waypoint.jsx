@@ -123,11 +123,11 @@ export default function Waypoint() {
   }
 
   async function navigate() {
-    invoke("navigate_ship_to_system", {
+    invoke("navigate_ship_anywhere", {
       token: Storage.getToken(),
       symbol: otherShip.symbol,
-      startSystem: otherShip.nav.route.departure.systemSymbol,
-      endSystem: systemId
+      waypoint: waypointId,
+      system: systemId
     }).then(response => {
       console.log(response);
     });

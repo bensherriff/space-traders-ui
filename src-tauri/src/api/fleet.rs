@@ -1,8 +1,11 @@
+use std::{thread, time::Duration};
+
+use log::warn;
 use tauri::State;
 
-use crate::{models::{ship::{Ship, ShipTransactionResponse, ShipType, navigation::{NavigationResponse, ShipJumpResponse, ShipNavigateResponse, FlightMode, Navigation}, cargo::{CargoRefinement, ExtractedCargo, CargoItem, Cargo, CargoResponse}, cooldown::Cooldown, ShipScanResponse, fuel::RefuelResponse}, survey::{SurveyResponse, Survey}, transaction::{TransactionResponse, Transaction}, system::SystemScanResponse, waypoint::WaypointScanResponse, contract::Contract, chart::ChartResponse}, data::{fleet::insert_ship}, DataState};
+use crate::{models::{ship::{Ship, ShipTransactionResponse, ShipType, navigation::{NavigationResponse, ShipJumpResponse, ShipNavigateResponse, FlightMode, Navigation, NavStatus}, cargo::{CargoRefinement, ExtractedCargo, CargoItem, Cargo, CargoResponse}, cooldown::Cooldown, ShipScanResponse, fuel::RefuelResponse}, survey::{SurveyResponse, Survey}, transaction::{TransactionResponse, Transaction}, system::SystemScanResponse, waypoint::{WaypointScanResponse, WaypointType}, contract::Contract, chart::ChartResponse}, data::{fleet::insert_ship}, DataState, api::calculate_timeout};
 
-use super::requests::{ResponseObject};
+use super::requests::{ResponseObject, ErrorObject};
 
 #[tauri::command]
 pub async fn list_ships(state: State<'_, DataState>, token: String) -> Result<ResponseObject<Vec<Ship>>, ()> {
@@ -154,17 +157,67 @@ pub async fn jettison_cargo(state: State<'_, DataState>, token: String, symbol: 
 /// When used while in orbit or docked to a jump gate waypoint, any ship can use this command.
 /// When used elsewhere, jumping requires a jump drive unit and consumes a unit of antimatter (which needs to be in your cargo).
 #[tauri::command]
-pub async fn jump_ship(state: State<'_, DataState>, token: String, symbol: String, system: String) -> Result<ResponseObject<ShipJumpResponse>, ()> {
+pub async fn jump_ship(state: State<'_, DataState>, token: String, symbol: String, system: String, use_jump_drive: bool) -> Result<ResponseObject<ShipJumpResponse>, ()> {
+  let _state = state.to_owned();
+  let _token = token.to_owned();
+  let _symbol = symbol.to_owned();
+  let s = get_ship(_state, _token, _symbol).await.unwrap();
   let url = format!("/my/ships/{}/jump", symbol);
   let body = serde_json::json!({
     "systemSymbol": system
   });
-  let result = state.request.post_request::<ShipJumpResponse>(token, url, Some(body.to_string())).await;
-  match &result.data {
-    Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data.nav),
+  match &s.data {
+    Some(ship) => {
+      if ship.nav.system_symbol == system {
+        return Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Ship already at location".to_string() }), meta: None });
+      }
+      if use_jump_drive {
+        let result = state.request.post_request::<ShipJumpResponse>(token, url, Some(body.to_string())).await;
+        match &result.data {
+          Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data.nav),
+          None => {}
+        };
+        return Ok(result);
+      } else {
+        let _state = state.to_owned();
+        let _token = token.to_owned();
+        let ship_system = ship.nav.system_symbol.to_string();
+        let s = crate::api::systems::get_system(_state, _token, ship_system).await.unwrap();
+        match &s.data {
+          Some(system) => {
+            for waypoint in system.waypoints.iter() {
+              if matches!(waypoint.waypoint_type, WaypointType::JumpGate) {
+                let _state = state.to_owned();
+                let _token = token.to_owned();
+                let _ship_system = system.symbol.to_string();
+                let n = navigate_ship(_state, _token, ship.symbol.to_owned(), waypoint.symbol.to_owned()).await.unwrap();
+                match &n.data {
+                  Some(response) => {
+                    crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &response.nav);
+                    let timeout = calculate_timeout(response.nav.route.departure_time.to_string(), response.nav.route.arrival_time.to_string());
+                    println!("Timeout: {}", timeout);
+                    thread::sleep(Duration::from_millis((timeout * 1000) as u64));
+                    let _state = state.to_owned();
+                    let _token = token.to_owned();
+                    let result = state.request.post_request::<ShipJumpResponse>(token, url, Some(body.to_string())).await;
+                    match &result.data {
+                      Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data.nav),
+                      None => {}
+                    };
+                    return Ok(result);
+                  }
+                  None => {}
+                };
+              }
+            }
+          }
+          None => {}
+        };
+      }
+    }
     None => {}
-  };
-  Ok(result)
+  }
+  Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Unable to jump ship".to_string() }), meta: None })
 }
 
 /// Navigate to a target destination. The destination must be located within the same system as the ship.
@@ -176,6 +229,15 @@ pub async fn jump_ship(state: State<'_, DataState>, token: String, symbol: Strin
 /// To travel between systems, see the ship's warp or jump actions.
 #[tauri::command]
 pub async fn navigate_ship(state: State<'_, DataState>, token: String, symbol: String, waypoint: String) -> Result<ResponseObject<ShipNavigateResponse>, ()> {
+  let s = get_ship(state.to_owned(), token.to_owned(), symbol.to_owned()).await.unwrap();
+  match &s.data {
+    Some(ship) => {
+      if matches!(ship.nav.status, NavStatus::Docked) {
+        orbit_ship(state.to_owned(), token.to_owned(), symbol.to_owned()).await.unwrap();
+      }
+    }
+    None => {}
+  }
   let url = format!("/my/ships/{}/navigate", symbol);
   let body = serde_json::json!({
     "waypointSymbol": waypoint
@@ -186,6 +248,24 @@ pub async fn navigate_ship(state: State<'_, DataState>, token: String, symbol: S
     None => {}
   };
   Ok(result)
+}
+
+#[tauri::command]
+pub async fn navigate_ship_anywhere(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, symbol: String, waypoint: String, system: String) -> Result<ResponseObject<ShipNavigateResponse>, ()> {
+  let s = get_ship(state.to_owned(), token.to_owned(), symbol.to_owned()).await.unwrap();
+  match &s.data {
+    Some(ship) => {
+      let current_system = ship.nav.system_symbol.to_string();
+      if current_system == system {
+        return navigate_ship(state.to_owned(), token.to_owned(), symbol.to_owned(), waypoint.to_owned()).await;
+      } else {
+        let _ = navigate_ship_to_system(state.to_owned(), app_handle, token.to_owned(), symbol.to_owned(), current_system.to_owned(), system.to_owned()).await.unwrap();
+        return navigate_ship(state.to_owned(), token.to_owned(), symbol.to_owned(), waypoint.to_owned()).await;
+      }
+    }
+    None => Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Ship not found".to_string() }), meta: None })
+  }
+  
 }
 
 /// Update the nav data of a ship, such as the flight mode.
@@ -328,9 +408,34 @@ pub async fn negotiate_contract(state: State<'_, DataState>, token: String, symb
 }
 
 #[tauri::command]
-pub async fn navigate_ship_to_system(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, symbol: String, start_system: String, end_system: String) -> Result<(), ()> {
-  println!("{} navigating from {} to {}", symbol, start_system, end_system);
-  let path = crate::api::systems::get_path_to_system(state, app_handle, token, start_system, end_system).await;
-  println!("path: {:?}", path);
-  Ok(())
+pub async fn navigate_ship_to_system(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, symbol: String, start_system: String, end_system: String) -> Result<ResponseObject<ShipNavigateResponse>, ()> {
+  let _state = state.to_owned();
+  let _token = token.to_owned();
+  let p = crate::api::systems::get_path_to_system(_state, app_handle.to_owned(), _token, start_system, end_system).await.unwrap();
+  match &p.data {
+    Some(system_path) => {
+      let mut path = system_path.clone();
+      println!("Path: {:?}", path);
+      while !path.is_empty() {
+        let _state = state.to_owned();
+        let _token = token.to_owned();
+        let _symbol = symbol.to_owned();
+        let r = jump_ship(_state, _token, _symbol, path.pop().unwrap(), false).await.unwrap();
+        match &r.data {
+          Some(response) => {
+            println!("Jumped to system: {:?}", response);
+            thread::sleep(Duration::from_millis((response.cooldown.total_seconds * 1000) as u64));
+          }
+          None => {}
+        };
+      }
+    }
+    None => {
+      match &p.error {
+        Some(e) => warn!("Error getting path: {:?}", e),
+        None => warn!("Error getting path")
+      };
+    }
+  };
+  Ok(ResponseObject { data: None, error: None, meta: None })
 }

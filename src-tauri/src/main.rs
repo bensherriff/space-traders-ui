@@ -95,6 +95,7 @@ fn main() {
       api::fleet::transfer_cargo,
       api::fleet::negotiate_contract,
       api::fleet::navigate_ship_to_system,
+      api::fleet::navigate_ship_anywhere,
       api::get_status,
       api::register,
       api::systems::list_systems,
