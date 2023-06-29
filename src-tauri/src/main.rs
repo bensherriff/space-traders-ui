@@ -67,6 +67,7 @@ fn main() {
       api::contracts::fulfill_contract,
       api::factions::get_faction,
       api::factions::get_factions,
+      api::factions::list_faction_strings,
       api::fleet::list_ships,
       api::fleet::purchase_ship,
       api::fleet::get_ship,

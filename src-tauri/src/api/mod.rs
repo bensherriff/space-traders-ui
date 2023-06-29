@@ -18,12 +18,12 @@ pub async fn get_status(state: State<'_, DataState>) -> Result<ResponseObject<St
 }
 
 #[tauri::command]
-pub async fn register(state: State<'_, DataState>, token: String, faction: String, symbol: String, email: String) -> Result<ResponseObject<NewAgentResponse>, ()> {
+pub async fn register(state: State<'_, DataState>, faction: String, symbol: String, email: String) -> Result<ResponseObject<NewAgentResponse>, ()> {
   let new_agent = NewAgent {
     faction: faction.to_string(),
     symbol: symbol.to_string(),
     email: email.to_string()
   };
-  let result = state.request.post_request::<NewAgentResponse>(token, "/register".to_string(), Some(serde_json::to_string(&new_agent).unwrap())).await;
+  let result = state.request.post_request::<NewAgentResponse>("".to_string(), "/register".to_string(), Some(serde_json::to_string(&new_agent).unwrap())).await;
   Ok(result)
 }

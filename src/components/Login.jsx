@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useRecoilState} from "recoil";
 import Input from "./Form/Input";
 import { Button } from ".";
+import Select from "./Form/Select";
 
 export default function Login() {
   const [agent, setAgent] = useRecoilState(State.agentState);
@@ -13,15 +14,18 @@ export default function Login() {
   const [tokenError, setTokenError] = useState("");
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState("");
+  const [factions, setFactions] = useState([]);
   const [faction, setFaction] = useState("");
   const [factionError, setFactionError] = useState("");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [registerError, setRegisterError] = useState("");
   const [status, setStatus] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
     var token = Storage.getToken();
+    list_faction_strings();
     if (token) {
       setToken(token);
     }
@@ -33,26 +37,47 @@ export default function Login() {
   }
 
   async function register() {
-
+    await invoke("register", {faction: faction, symbol: name, email: email }).then(response => {
+      if (response && response.data) {
+        console.log(response);
+        setToken(response.data.token);
+        Storage.setToken(response.data.token);
+        setAgent(response.data.agent);
+        navigate("/fleet");
+      } else if (response && response.error) {
+        setRegisterError(response.error.message);
+      }
+    });
   }
 
   async function get_my_agent() {
     await invoke("get_my_agent", { token: token }).then(response => {
-      if (response.data) {
+      if (response && response.data) {
         setTokenError("");
         setToken(token);
         Storage.setToken(token);
         setAgent(response.data);
         navigate("/fleet");
-      } else if (response.error) {
+      } else if (response && response.error) {
         setTokenError(response.error.message);
+      }
+    });
+  }
+
+  async function list_faction_strings() {
+    await invoke("list_faction_strings").then(response => {
+      if (response && response.data) {
+        setFactions(response.data);
+        setFaction(response.data[0]);
       }
     });
   }
 
   async function get_status() {
     await invoke("get_status").then(response => {
-      setStatus(response.data);
+      if (response && response.data) {
+        setStatus(response.data);
+      }
     });
   }
 
@@ -105,16 +130,12 @@ export default function Login() {
                 setName(e.currentTarget.value);
               }}
             />
-            <Input
+            <Select
               label="Faction"
-              type="text"
-              placeholder="CHANGE TO SELECT"
               errorMsg={factionError}
-              value={name}
-              onChange={(e) => {
-                setFactionError("");
-                setFaction(e.currentTarget.value);
-              }}
+              list={factions}
+              selected={faction}
+              setSelected={setFaction}
             />
             <Input
               label="Email"
@@ -128,6 +149,9 @@ export default function Login() {
               }}
             />
             <Button type="submit">Register</Button>
+            <p className="mt-2 text-sm text-red-600" id="text-error">
+              {registerError}
+            </p>
           </form>
         </div>
       </div>

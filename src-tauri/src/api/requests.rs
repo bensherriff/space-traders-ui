@@ -134,15 +134,10 @@ impl Request {
                 meta: None
               })
             }
-            _ => {
-              let string = "Unable to match response object";
-              warn!("{}", string);
+            ResponseObjectEvent::None => {
               Ok(ResponseObject {
                 data: None,
-                error: Some(ErrorObject {
-                  code: 9999,
-                  message: string.to_string(),
-                }),
+                error: None,
                 meta: None
               })
             }

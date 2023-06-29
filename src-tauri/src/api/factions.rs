@@ -1,6 +1,7 @@
 use tauri::State;
+use strum::IntoEnumIterator;
 
-use crate::{models::faction::Faction, DataState};
+use crate::{models::faction::{Faction, FactionSymbol}, DataState};
 
 use super::requests::{ResponseObject};
 
@@ -21,4 +22,14 @@ pub async fn get_factions(state: State<'_, DataState>, token: String, limit: u64
   ];
   let result = state.request.get_request::<Vec<Faction>>(token, "/factions".to_string(), Some(query)).await;
   Ok(result)
+}
+
+#[tauri::command]
+pub async fn list_faction_strings() -> Result<ResponseObject<Vec<String>>, ()> {
+  let values = FactionSymbol::iter().map(|x| x.to_string()).collect::<Vec<String>>();
+  Ok(ResponseObject {
+    data: Some(values),
+    error: None,
+    meta: None
+  })
 }

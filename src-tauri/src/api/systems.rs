@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use log::warn;
-use petgraph::graph::NodeIndex;
+use petgraph::{graph::NodeIndex, Graph};
 use tauri::State;
 use tauri_plugin_store::StoreBuilder;
 
@@ -114,17 +114,17 @@ pub async fn list_all_systems(state: State<'_, DataState>, app_handle: tauri::Ap
     }
   }
   let _systems = systems.to_owned();
-    match _store.insert(SYSTEM_STRING.to_string(), serde_json::json!(_systems)) {
-      Ok(_) => {
-        match _store.save() {
-          Ok(_) => {}
-          Err(_err) => {
-            warn!("Error saving store: {:?}", _err);
-          }
-        };
-      },
-      Err(err) => warn!("Error storing systems {:?}", err)
-    }
+  match _store.insert(SYSTEM_STRING.to_string(), serde_json::json!(_systems)) {
+    Ok(_) => {
+      match _store.save() {
+        Ok(_) => {}
+        Err(_err) => {
+          warn!("Error saving store: {:?}", _err);
+        }
+      };
+    },
+    Err(err) => warn!("Error storing systems {:?}", err)
+  }
 
   Ok(ResponseObject { data: Some(systems), error: None, meta: None })
 }
@@ -153,6 +153,7 @@ pub async fn get_path_to_system(state: State<'_, DataState>, app_handle: tauri::
   println!("from {} to {}", start_symbol, end_symbol);
   let _state = state.to_owned();
   let _token = token.to_owned();
+  let _app_handle = app_handle.to_owned();
 
   let mut graph = petgraph::Graph::<String, i32>::new();
   let systems = list_all_systems(_state, app_handle, _token).await;
@@ -203,6 +204,31 @@ pub async fn get_path_to_system(state: State<'_, DataState>, app_handle: tauri::
     }
     Err(_err) => warn!("Error getting systems: {:?}", _err)
   };
+
+  // let mut _store = StoreBuilder::new(_app_handle, get_store_path()).build();
+  // match _store.load() {
+  //   Ok(_) => {}
+  //   Err(err) => {
+  //     warn!("Error loading store: {:?}", err);
+  //   }
+  // };
+  // const SYSTEMS_PATH_STRING: &str = "systems_path";
+  // match _store.insert(SYSTEMS_PATH_STRING.to_string(), serde_json::to_string(&graph)) {
+  //   Ok(_) => {
+  //     match _store.save() {
+  //       Ok(_) => {}
+  //       Err(_err) => {
+  //         warn!("Error saving store: {:?}", _err);
+  //       }
+  //     };
+  //   },
+  //   Err(err) => warn!("Error storing systems {:?}", err)
+  // }
+  // let _value = _store.get(SYSTEMS_PATH_STRING).unwrap().to_owned();
+  // let _graph: petgraph::Graph::<String, i32> = match serde_json::from_value(_value) {
+  //   Ok(s) => s,
+  //   Err(_err) => vec![]
+  // };
 
   println!("{:?}, {:?}", checked_systems.get(&start_symbol).unwrap(), checked_systems.get(&end_symbol).unwrap());
   

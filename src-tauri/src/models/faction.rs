@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Faction {
@@ -17,6 +18,101 @@ pub struct FactionTrait {
   pub symbol: FactionTraitType,
   pub name: String,
   pub description: String
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, EnumIter)]
+pub enum FactionSymbol {
+  #[serde(rename = "COSMIC")]
+  Cosmic,
+  #[serde(rename = "VOID")]
+  Void,
+  #[serde(rename = "GALACTIC")]
+  Galactic,
+  #[serde(rename = "QUANTUM")]
+  Quantum,
+  #[serde(rename = "DOMINION")]
+  Dominion,
+  #[serde(rename = "ASTRO")]
+  Astro,
+  #[serde(rename = "CORSAIRS")]
+  Corsairs,
+  #[serde(rename = "OBSIDIAN")]
+  Obsidian,
+  #[serde(rename = "AEGIS")]
+  Aegis,
+  #[serde(rename = "UNITED")]
+  United,
+  #[serde(rename = "SOLITARY")]
+  Solitary,
+  #[serde(rename = "COBALT")]
+  Cobalt,
+  #[serde(rename = "OMEGA")]
+  Omega,
+  #[serde(rename = "ECHO")]
+  Echo,
+  #[serde(rename = "LORDS")]
+  Lords,
+  #[serde(rename = "CULT")]
+  Cult,
+  #[serde(rename = "ANCIENTS")]
+  Ancients,
+  #[serde(rename = "SHADOW")]
+  Shadow,
+  #[serde(rename = "ETHEREAL")]
+  Ethereal
+}
+
+impl Display for FactionSymbol {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    match self {
+      FactionSymbol::Cosmic => write!(f, "COSMIC"),
+      FactionSymbol::Void => write!(f, "VOID"),
+      FactionSymbol::Galactic => write!(f, "GALACTIC"),
+      FactionSymbol::Quantum => write!(f, "QUANTUM"),
+      FactionSymbol::Dominion => write!(f, "DOMINION"),
+      FactionSymbol::Astro => write!(f, "ASTRO"),
+      FactionSymbol::Corsairs => write!(f, "CORSAIRS"),
+      FactionSymbol::Obsidian => write!(f, "OBSIDIAN"),
+      FactionSymbol::Aegis => write!(f, "AEGIS"),
+      FactionSymbol::United => write!(f, "UNITED"),
+      FactionSymbol::Solitary => write!(f, "SOLITARY"),
+      FactionSymbol::Cobalt => write!(f, "COBALT"),
+      FactionSymbol::Omega => write!(f, "OMEGA"),
+      FactionSymbol::Echo => write!(f, "ECHO"),
+      FactionSymbol::Lords => write!(f, "LORDS"),
+      FactionSymbol::Cult => write!(f, "CULT"),
+      FactionSymbol::Ancients => write!(f, "ANCIENTS"),
+      FactionSymbol::Shadow => write!(f, "SHADOW"),
+      FactionSymbol::Ethereal => write!(f, "ETHEREAL")
+    }
+  }
+}
+
+impl FactionSymbol {
+  pub fn from_str(s: &str) -> Option<FactionSymbol> {
+    match s {
+      "COSMIC" => Some(FactionSymbol::Cosmic),
+      "VOID" => Some(FactionSymbol::Void),
+      "GALACTIC" => Some(FactionSymbol::Galactic),
+      "QUANTUM" => Some(FactionSymbol::Quantum),
+      "DOMINION" => Some(FactionSymbol::Dominion),
+      "ASTRO" => Some(FactionSymbol::Astro),
+      "CORSAIRS" => Some(FactionSymbol::Corsairs),
+      "OBSIDIAN" => Some(FactionSymbol::Obsidian),
+      "AEGIS" => Some(FactionSymbol::Aegis),
+      "UNITED" => Some(FactionSymbol::United),
+      "SOLITARY" => Some(FactionSymbol::Solitary),
+      "COBALT" => Some(FactionSymbol::Cobalt),
+      "OMEGA" => Some(FactionSymbol::Omega),
+      "ECHO" => Some(FactionSymbol::Echo),
+      "LORDS" => Some(FactionSymbol::Lords),
+      "CULT" => Some(FactionSymbol::Cult),
+      "ANCIENTS" => Some(FactionSymbol::Ancients),
+      "SHADOW" => Some(FactionSymbol::Shadow),
+      "ETHEREAL" => Some(FactionSymbol::Ethereal),
+      _ => None
+    }
+  }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -203,6 +299,14 @@ impl Display for FactionTraitType {
         FactionTraitType::Commercial => write!(f, "Commercial"),
         FactionTraitType::FreeMarkets => write!(f, "Free Markets"),
         FactionTraitType::Entrepreneurial => write!(f, "Entrepreneurial"),
+    }
+  }
+}
+
+impl FactionTraitType {
+  pub fn from_str(s: &str) -> Option<FactionSymbol> {
+    match s {
+      _ => todo!()
     }
   }
 }
