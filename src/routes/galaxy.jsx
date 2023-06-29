@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { invoke } from "@tauri-apps/api/tauri";
 import { Storage } from '../js';
 import SymbolAutoComplete from '../components/Form/SymbolAutoComplete';
+import { Button } from '../components';
+import { NavLink } from 'react-router-dom';
 
 export default function Galaxy() {
   const [systems, setSystems] = useState(null);
@@ -30,6 +32,7 @@ export default function Galaxy() {
       ):
       <>
       <SymbolAutoComplete items={systems} selectedItem={selectedSystem} setSelectedItem={setSelectedSystem} />
+      <NavLink to={`/system/${selectedSystem.symbol}`}><Button>View System</Button></NavLink>
       </>
       }
     </div>

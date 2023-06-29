@@ -188,11 +188,11 @@ diesel::table! {
   jump_gates (symbol, connected_symbol) {
     symbol -> Text,
     jump_range -> Integer,
-    faction_symbol -> Text,
+    faction_symbol -> Nullable<Text>,
     connected_symbol -> Text,
     connected_sector_symbol -> Text,
     connected_system_type -> Text,
-    connected_faction_symbol -> Text,
+    connected_faction_symbol -> Nullable<Text>,
     connected_x -> Integer,
     connected_y -> Integer,
     connected_distance -> Integer,

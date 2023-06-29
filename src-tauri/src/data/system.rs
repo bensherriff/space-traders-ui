@@ -543,7 +543,7 @@ pub fn get_jump_gate(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoint_
       }
       Some(JumpGate {
         jump_range: r[0].jump_range,
-        faction_symbol: r[0].faction_symbol.to_string(),
+        faction_symbol: r[0].faction_symbol.to_owned(),
         connected_systems
       })
     }
@@ -559,11 +559,17 @@ pub fn insert_jump_gate(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoi
     let _jump_gate = NewJumpGateDB {
         symbol: waypoint_symbol,
         jump_range: jump_gate.jump_range,
-        faction_symbol: &jump_gate.faction_symbol,
+        faction_symbol: match &jump_gate.faction_symbol {
+          Some(f) => Some(f),
+          None => None
+        },
         connected_symbol: &connected_system.symbol,
         connected_sector_symbol: &connected_system.sector_symbol,
         connected_system_type: &connected_system.system_type.to_string(),
-        connected_faction_symbol: &connected_system.faction_symbol,
+        connected_faction_symbol: match &connected_system.faction_symbol {
+          Some(f) => Some(f),
+          None => None
+        },
         connected_x: connected_system.x,
         connected_y: connected_system.y,
         connected_distance: connected_system.distance

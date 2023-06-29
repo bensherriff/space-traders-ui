@@ -109,7 +109,7 @@ pub struct JumpGate {
   #[serde(rename = "jumpRange")]
   pub jump_range: i32,
   #[serde(rename = "factionSymbol")]
-  pub faction_symbol: String,
+  pub faction_symbol: Option<String>,
   #[serde(rename = "connectedSystems")]
   pub connected_systems: Vec<ConnectedSystem>
 }
@@ -122,7 +122,7 @@ pub struct ConnectedSystem {
   #[serde(rename = "type")]
   pub system_type: SystemType,
   #[serde(rename = "factionSymbol")]
-  pub faction_symbol: String,
+  pub faction_symbol: Option<String>,
   pub x: i32,
   pub y: i32,
   pub distance: i32

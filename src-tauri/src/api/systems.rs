@@ -157,11 +157,11 @@ pub async fn get_path_to_system(state: State<'_, DataState>, app_handle: tauri::
 
   let mut graph = petgraph::Graph::<String, i32>::new();
   let systems = list_all_systems(_state, app_handle, _token).await;
-  let mut checked_systems: HashMap<String, NodeIndex> = HashMap::new();
   match systems {
     Ok(r) => {
       match &r.data {
         Some(s) => {
+          let mut checked_systems: HashMap<String, NodeIndex> = HashMap::new();
           for system in s.iter() {
             println!("nodes: {:?} edges: {:?}", graph.node_count(), graph.edge_count());
             let current_system: NodeIndex;
@@ -202,18 +202,22 @@ pub async fn get_path_to_system(state: State<'_, DataState>, app_handle: tauri::
         None => {}
       }
     }
-    Err(_err) => warn!("Error getting systems: {:?}", _err)
+    Err(err) => warn!("Error getting systems: {:?}", err)
   };
 
-  // let mut _store = StoreBuilder::new(_app_handle, get_store_path()).build();
-  // match _store.load() {
-  //   Ok(_) => {}
-  //   Err(err) => {
-  //     warn!("Error loading store: {:?}", err);
-  //   }
-  // };
+  let mut _store = StoreBuilder::new(_app_handle, get_store_path()).build();
+  match _store.load() {
+    Ok(_) => {}
+    Err(err) => {
+      warn!("Error loading store: {:?}", err);
+    }
+  };
+
+  println!("{:?}", graph);
   // const SYSTEMS_PATH_STRING: &str = "systems_path";
-  // match _store.insert(SYSTEMS_PATH_STRING.to_string(), serde_json::to_string(&graph)) {
+  // let t = serde_json::to_string(&graph);
+  // let v = serde_json::to_value(&graph).unwrap();
+  // match _store.insert(SYSTEMS_PATH_STRING.to_string(), v) {
   //   Ok(_) => {
   //     match _store.save() {
   //       Ok(_) => {}
@@ -230,7 +234,7 @@ pub async fn get_path_to_system(state: State<'_, DataState>, app_handle: tauri::
   //   Err(_err) => vec![]
   // };
 
-  println!("{:?}, {:?}", checked_systems.get(&start_symbol).unwrap(), checked_systems.get(&end_symbol).unwrap());
+  // println!("{:?}, {:?}", checked_systems.get(&start_symbol).unwrap(), checked_systems.get(&end_symbol).unwrap());
   
   Ok(ResponseObject { data: None, error: None, meta: None })
 }

@@ -144,13 +144,11 @@ impl Request {
           }
         }
         Err(err) => {
-          let string = "Failed to deserialize object";
-          warn!("{}: {}", string, err);
           Ok(ResponseObject {
             data: None,
             error: Some(ErrorObject {
               code: 9999,
-              message: string.to_string(),
+              message: format!("Failed to deserialize object: {}", err).to_string(),
             }),
             meta: None
           })
