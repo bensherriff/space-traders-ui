@@ -167,7 +167,7 @@ impl Request {
                 thread::sleep(time::Duration::from_millis(exp.pow(attempt as u32) * 5000));
                 continue;
               } else {
-                warn!("{}", error.message);
+                warn!("{}: {}", error.code, error.message);
                 return r
               }
             }
@@ -175,7 +175,7 @@ impl Request {
           }
         },
         Err(err) => {
-          warn!("{}", err);
+          warn!("Error handling response: {}", err);
           return ResponseObject {
             data: None,
             error: Some(ErrorObject {

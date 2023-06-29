@@ -1,6 +1,6 @@
 use std::{thread, time::Duration};
 
-use log::warn;
+use log::{debug, warn};
 use tauri::State;
 
 use crate::{models::{ship::{Ship, ShipTransactionResponse, ShipType, navigation::{NavigationResponse, ShipJumpResponse, ShipNavigateResponse, FlightMode, Navigation, NavStatus}, cargo::{CargoRefinement, ExtractedCargo, CargoItem, Cargo, CargoResponse}, cooldown::Cooldown, ShipScanResponse, fuel::RefuelResponse}, survey::{SurveyResponse, Survey}, transaction::{TransactionResponse, Transaction}, system::SystemScanResponse, waypoint::{WaypointScanResponse, WaypointType}, contract::Contract, chart::ChartResponse}, data::{fleet::insert_ship}, DataState, api::calculate_timeout};
@@ -158,56 +158,56 @@ pub async fn jettison_cargo(state: State<'_, DataState>, token: String, symbol: 
 /// When used elsewhere, jumping requires a jump drive unit and consumes a unit of antimatter (which needs to be in your cargo).
 #[tauri::command]
 pub async fn jump_ship(state: State<'_, DataState>, token: String, symbol: String, system: String, use_jump_drive: bool) -> Result<ResponseObject<ShipJumpResponse>, ()> {
-  let _state = state.to_owned();
-  let _token = token.to_owned();
-  let _symbol = symbol.to_owned();
-  let s = get_ship(_state, _token, _symbol).await.unwrap();
-  let url = format!("/my/ships/{}/jump", symbol);
-  let body = serde_json::json!({
-    "systemSymbol": system
-  });
+  async fn internal_jump(state: State<'_, DataState>, token: String, symbol: String, system: String) -> Result<ResponseObject<ShipJumpResponse>, ()> {
+    let url = format!("/my/ships/{}/jump", symbol);
+    let body = serde_json::json!({
+      "systemSymbol": system
+    });
+    let result = state.request.post_request::<ShipJumpResponse>(token, url, Some(body.to_string())).await;
+    match &result.data {
+      Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data.nav),
+      None => {}
+    };
+    return Ok(result);
+  }
+
+  let s = get_ship(state.to_owned(), token.to_owned(), symbol.to_owned()).await.unwrap();
+
   match &s.data {
     Some(ship) => {
       if ship.nav.system_symbol == system {
         return Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Ship already at location".to_string() }), meta: None });
       }
       if use_jump_drive {
-        let result = state.request.post_request::<ShipJumpResponse>(token, url, Some(body.to_string())).await;
-        match &result.data {
-          Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data.nav),
-          None => {}
-        };
-        return Ok(result);
+        return internal_jump(state.to_owned(), token.to_owned(), symbol.to_owned(), system.to_owned()).await;
       } else {
-        let _state = state.to_owned();
-        let _token = token.to_owned();
-        let ship_system = ship.nav.system_symbol.to_string();
-        let s = crate::api::systems::get_system(_state, _token, ship_system).await.unwrap();
+        let s = crate::api::systems::get_system(state.to_owned(), token.to_owned(), ship.nav.system_symbol.to_string()).await.unwrap();
         match &s.data {
-          Some(system) => {
-            for waypoint in system.waypoints.iter() {
+          Some(ship_system) => {
+            for waypoint in ship_system.waypoints.iter() {
               if matches!(waypoint.waypoint_type, WaypointType::JumpGate) {
-                let _state = state.to_owned();
-                let _token = token.to_owned();
-                let _ship_system = system.symbol.to_string();
-                let n = navigate_ship(_state, _token, ship.symbol.to_owned(), waypoint.symbol.to_owned()).await.unwrap();
-                match &n.data {
-                  Some(response) => {
-                    crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &response.nav);
-                    let timeout = calculate_timeout(response.nav.route.departure_time.to_string(), response.nav.route.arrival_time.to_string());
-                    println!("Timeout: {}", timeout);
-                    thread::sleep(Duration::from_millis((timeout * 1000) as u64));
-                    let _state = state.to_owned();
-                    let _token = token.to_owned();
-                    let result = state.request.post_request::<ShipJumpResponse>(token, url, Some(body.to_string())).await;
-                    match &result.data {
-                      Some(data) => crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &data.nav),
+                // Navigate to jump gate waypoint if necessary and jump
+                if ship.nav.waypoint_symbol.to_string() == waypoint.symbol.to_owned() {
+                  if matches!(ship.nav.status, NavStatus::Docked) {
+                    let r = orbit_ship(state.to_owned(), token.to_owned(), symbol.to_owned()).await.unwrap();
+                    match &r.data {
+                      Some(_) => {},
                       None => {}
-                    };
-                    return Ok(result);
+                    }
                   }
-                  None => {}
-                };
+                  return internal_jump(state.to_owned(), token.to_owned(), symbol.to_owned(), system.to_owned()).await;
+                } else {
+                  let n = navigate_ship(state.to_owned(), token.to_owned(), ship.symbol.to_owned(), waypoint.symbol.to_owned()).await.unwrap();
+                  match &n.data {
+                    Some(response) => {
+                      crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &response.nav);
+                      let timeout = calculate_timeout(response.nav.route.departure_time.to_string(), response.nav.route.arrival_time.to_string());
+                      thread::sleep(Duration::from_secs(timeout as u64));
+                      return internal_jump(state.to_owned(), token.to_owned(), symbol.to_owned(), system.to_owned()).await;
+                    }
+                    None => {}
+                  };
+                }
               }
             }
           }
@@ -259,8 +259,12 @@ pub async fn navigate_ship_anywhere(state: State<'_, DataState>, app_handle: tau
       if current_system == system {
         return navigate_ship(state.to_owned(), token.to_owned(), symbol.to_owned(), waypoint.to_owned()).await;
       } else {
-        let _ = navigate_ship_to_system(state.to_owned(), app_handle, token.to_owned(), symbol.to_owned(), current_system.to_owned(), system.to_owned()).await.unwrap();
-        return navigate_ship(state.to_owned(), token.to_owned(), symbol.to_owned(), waypoint.to_owned()).await;
+        let response = navigate_ship_to_system(state.to_owned(), app_handle, token.to_owned(), symbol.to_owned(), current_system.to_owned(), system.to_owned()).await.unwrap();
+        if ship.nav.waypoint_symbol.to_string() == waypoint {
+          return Ok(response);
+        } else {
+          return navigate_ship(state.to_owned(), token.to_owned(), symbol.to_owned(), waypoint.to_owned()).await;
+        }
       }
     }
     None => Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Ship not found".to_string() }), meta: None })
@@ -414,7 +418,10 @@ pub async fn navigate_ship_to_system(state: State<'_, DataState>, app_handle: ta
   let p = crate::api::systems::get_path_to_system(_state, app_handle.to_owned(), _token, start_system, end_system).await.unwrap();
   match &p.data {
     Some(system_path) => {
-      let mut path = system_path.clone();
+      let mut path: Vec<String> = system_path.to_owned();
+      debug!("Navigation path for {}: {:?}", symbol, path);
+      path.reverse(); // Reverse the path with the next system at the end
+      let _ = path.pop(); // Remove the current system from the path
       println!("Path: {:?}", path);
       while !path.is_empty() {
         let _state = state.to_owned();
@@ -423,17 +430,25 @@ pub async fn navigate_ship_to_system(state: State<'_, DataState>, app_handle: ta
         let r = jump_ship(_state, _token, _symbol, path.pop().unwrap(), false).await.unwrap();
         match &r.data {
           Some(response) => {
-            println!("Jumped to system: {:?}", response);
-            thread::sleep(Duration::from_millis((response.cooldown.total_seconds * 1000) as u64));
+            debug!("Jump attempted to system: {}; cooldown: {} seconds", response.nav.system_symbol, response.cooldown.total_seconds);
+            thread::sleep(Duration::from_secs(response.cooldown.total_seconds as u64));
           }
-          None => {}
+          None => {
+            match &r.error {
+              Some(e) => {
+                warn!("Error jumping to system; {}: {}", e.code, e.message);
+                break;
+              },
+              None => {}
+            };
+          }
         };
       }
     }
     None => {
       match &p.error {
-        Some(e) => warn!("Error getting path: {:?}", e),
-        None => warn!("Error getting path")
+        Some(e) => return Ok(ResponseObject { data: None, error: Some(e.to_owned()), meta: None }),
+        None => {}
       };
     }
   };
