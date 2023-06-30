@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::sync::Mutex;
+use dotenv::dotenv;
 
 use api::requests::Request;
 use diesel::{r2d2::{Pool, ConnectionManager}, SqliteConnection};
@@ -29,6 +30,13 @@ pub struct Systems {
 pub struct SystemsState(Mutex<Systems>);
 
 fn main() {
+  dotenv().ok();
+
+  let debug = match std::env::var("DEBUG") {
+    Ok(val) => val == "true",
+    Err(_) => false
+  };
+
   let state = DataState {
     pool: connection_pool(),
     request: Request {
@@ -44,11 +52,8 @@ fn main() {
         LogTarget::Stdout,
         LogTarget::Webview
       ])
-      .level_for("tauri", LevelFilter::Info)
-      .level_for("reqwest", LevelFilter::Info)
-      .level_for("diesel", LevelFilter::Info)
-      .level_for("tao", LevelFilter::Error)
-      .level(LevelFilter::Debug)
+      .level_for("space_traders_ui", if debug { LevelFilter::Trace } else { LevelFilter::Info })
+      .level(LevelFilter::Info)
       .build())
     .plugin(tauri_plugin_store::Builder::default().build())
     .plugin(tauri_plugin_sql::Builder::default().build())
