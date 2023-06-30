@@ -1,47 +1,66 @@
 import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom";
 import { Text } from "../../js";
-import { v4 as uuidv4 } from 'uuid';
+import { SystemObject } from ".";
 
-const WIDTH = 1000;
-const HEIGHT = 1000;
+const WIDTH = 120000;
+const HEIGHT = 120000;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 20;
 const SCROLL_SENSITIVITY = 0.005;
 
-export default function Galaxy({ system }) {
+export default function GalaxyMap({ systems }) {
   const svgRef = useRef(null);
   const [displayText, setDisplayText] = useState("");
-  const [scale, setScale] = useState(6);
-
-  const waypointTypes = ["PLANET", "GAS_GIANT", "JUMP_GATE", "ASTEROID_FIELD", "NEBULA", "DEBRIS_FIELD", "GRAVITY_WELL"];
-  const orbitalTypes = ["MOON", "ORBITAL_STATION"];
-
-  const waypoints = system.waypoints.filter((waypoint) => waypointTypes.includes(waypoint.type));
-  const orbitals = system.waypoints.filter((waypoint) => orbitalTypes.includes(waypoint.type));
-
-  const satelliteOrbitRadius = 5 * scale;
+  const [cameraZoom, setCameraZoom] = useState(6);
+  const [cameraOffset, setCameraOffset] = useState({x: WIDTH/2, y: HEIGHT/2});
+  const [lastZoom, setLastZoom] = useState(6);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({x: 0, y: 0});
 
   useEffect(() => {
     if (svgRef.current) {
       const svg = svgRef.current;
-
-      let point = svg.createSVGPoint();
-
-      let isDragging = false;
-      let cameraZoom = 6;
+      const point = svg.createSVGPoint();
 
       function adjustZoom(zoomAmount, zoomFactor) {
+        let zoom = cameraZoom;
         if (!isDragging) {
           if (zoomAmount) {
-            cameraZoom += zoomAmount;
+            zoom += zoomAmount;
           } else if (zoomFactor) {
             zoomFactor*lastZoom;
           }
-          cameraZoom = Math.min(cameraZoom, MAX_ZOOM);
-          cameraZoom = Math.max(cameraZoom, MIN_ZOOM);
-          setScale(cameraZoom);
+          zoom = Math.min(zoom, MAX_ZOOM);
+          zoom = Math.max(zoom, MIN_ZOOM);
+          setCameraZoom(zoom);
         }
+      }
+
+      function getEventLocation(e) {
+        if (e.touches && e.touches.length == 1) {
+          return { x: e.touches[0].clientX, y: e.touches[0].clientY }
+        } else if (e.clientX && e.clientY) {
+          return { x: e.clientX, y: e.clientY }
+        }
+      }
+
+      function onPointerDown(event) {
+        setIsDragging(true);
+        setDragStart({
+          x: getEventLocation(event).x / cameraZoom - cameraOffset.x,
+          y: getEventLocation(event).y / cameraZoom - cameraOffset.y
+        });
+      }
+
+      function onPointerUp(event) {
+        setIsDragging(false);
+        setLastZoom(cameraZoom);
+      }
+
+      function onPointerMove(event) {
+        let {x, y} = cursorPosition(event);
+        let cursor = { x: x * cameraZoom + WIDTH/2, y: y * cameraZoom + HEIGHT/2 };
       }
 
       //TODO work on cursor positon for dragging
@@ -55,16 +74,21 @@ export default function Galaxy({ system }) {
       svg.addEventListener("mousemove", (event) => {
         let loc = cursorPosition(event);
       });
-      document.getElementById( "solar-system" ).onwheel = function(event){
+      document.getElementById( "galaxy" ).onwheel = function(event){
         event.preventDefault();
       };
       
-      document.getElementById( "solar-system" ).onmousewheel = function(event){
+      document.getElementById( "galaxy" ).onmousewheel = function(event){
           event.preventDefault();
       };
     }
 
   }, []);
+
+  let systemObjects = [];
+  for (let i = 0; i < 10; i++) {
+    systemObjects.push(<System key={systems[i].symbol} system={systems[i]} setDisplayText={setDisplayText} scale={cameraZoom} />);
+  }
 
   return (
     <svg
@@ -73,137 +97,40 @@ export default function Galaxy({ system }) {
       viewBox="0 0 1000 1000"
       style={{background: "#000"}}
       role="img"
-      aria-labelledby="solarSystemTitle"
-      aria-describedby="solarSystemDescription"
+      aria-labelledby="galaxyTitle"
+      aria-describedby="galaxyDescription"
       ref={svgRef}
-      id="solar-system"
+      id="galaxy"
     >
       <g className="js-svg-wrapper">
-        {waypoints.map((waypoint) => (
-          <WaypointOrbit x={waypoint.x} y={waypoint.y} scale={scale} />
-        ))}
-        {orbitals.map((waypoint) => (
-          <SatelliteOrbit x={waypoint.x} y={waypoint.y} scale={scale} orbitRadius={satelliteOrbitRadius} />
-        ))}
-        <Star system={system} setDisplayText={setDisplayText} scale={scale} />
-        {waypoints.map((waypoint) => (
-          <Waypoint waypoint={waypoint} setDisplayText={setDisplayText} scale={scale} />
-        ))}
-        {orbitals.map((waypoint) => (
-          <Satellite waypoint={waypoint} setDisplayText={setDisplayText} scale={scale} orbitRadius={satelliteOrbitRadius} />
-        ))}
+        {systemObjects}
         <text x={50} y={HEIGHT - 10} fontSize="2em" fill={"#fff"}>{displayText}</text>
       </g>
     </svg>
   )
 }
 
-function SystemObject({ x=WIDTH/2, y=HEIGHT/2, r=1, fill="", onMouseEnter=() => {}, onMouseLeave=() => {}, onClick=() => {} }) {
-  return (
-    <circle
-      className="cursor-pointer"
-      cx={x}
-      cy={y}
-      r={r}
-      fill={fill}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onClick={onClick}
-    />
-  )
-}
-
-function Star({ system, setDisplayText=() => {}, scale=1 }) {
+function System({ system, setDisplayText=() => {}, scale=1 }) {
+  const navigate = useNavigate();
   const color = Text.systemTypeColor(system.type);
-  return (
-    <SystemObject
-      x={WIDTH/2}
-      y={HEIGHT/2}
-      r={7 * scale}
-      fill={color.bg}
-      onMouseEnter={() => {setDisplayText(Text.capitalize(system.type))}}
-      onMouseLeave={() => {setDisplayText("")}}
-    />
-  )
-}
+  const split = system.symbol.split("-");
+  const x = WIDTH/2 + (system.x * scale);
+  const y = HEIGHT/2 + (system.y * scale);
 
-function Waypoint({ waypoint, setDisplayText=() => {}, scale=1 }) {
-  const navigate = useNavigate();
-  const color = Text.waypointTypeColor(waypoint.type);
-  const split = waypoint.symbol.split("-");
-  const x = WIDTH/2 + (waypoint.x * scale);
-  const y = HEIGHT/2 + (waypoint.y * scale);
+  console.log(system, x, y);
 
   return (
     <SystemObject
-      key={waypoint.symbol}
+      key={system.symbol}
       x={x}
       y={y}
-      r={waypoint.type == "JUMP_GATE"? 2 * scale: 3 * scale}
+      r={100 * scale}
       fill={color.bg}
       onClick={() => {
-        navigate(`/system/${split[0]}-${split[1]}/${waypoint.symbol}`);
+        navigate(`/system/${split[0]}-${split[1]}/${system.symbol}`);
       }}
-      onMouseEnter={() => {setDisplayText(`${Text.capitalize(waypoint.type)} ${waypoint.symbol}`)}}
+      onMouseEnter={() => {setDisplayText(`${Text.capitalize(system.type)} ${system.symbol}`)}}
       onMouseLeave={() => {setDisplayText("")}}
-    />
-  )
-}
-
-function WaypointOrbit({ x=WIDTH/2, y=HEIGHT/2, scale=1 }) {
-  const orbitRadius = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) * scale;
-
-  return (
-    <circle
-      key={uuidv4()}
-      cx={WIDTH/2}
-      cy={HEIGHT/2}
-      r={orbitRadius}
-      stroke={"#fff"}
-      strokeDasharray={"5,5"}
-      fillOpacity={0}
-    />
-  )
-}
-
-function Satellite({ waypoint, setDisplayText=() => {}, orbitRadius=5, scale=1 }) {
-  const navigate = useNavigate();
-  const color = Text.waypointTypeColor(waypoint.type);
-  const split = waypoint.symbol.split("-");
-  const planetX = WIDTH/2 + (waypoint.x * scale);
-  const planetY = HEIGHT/2 + (waypoint.y * scale);
-  const x = planetX + orbitRadius * Math.cos((2 * Math.PI));
-  const y = planetY + orbitRadius * Math.sin((2 * Math.PI));
-
-  return (
-    <SystemObject
-      key={waypoint.symbol}
-      x={x}
-      y={y}
-      r={1 * scale}
-      fill={color.bg}
-      onClick={() => {
-        navigate(`/system/${split[0]}-${split[1]}/${waypoint.symbol}`);
-      }}
-      onMouseEnter={() => {setDisplayText(`${Text.capitalize(waypoint.type)} ${waypoint.symbol}`)}}
-      onMouseLeave={() => {setDisplayText("")}}
-    />
-  )
-}
-
-function SatelliteOrbit({ x=WIDTH/2, y=HEIGHT/2, orbitRadius=5, scale=1 }) {
-  const planetX = WIDTH/2 + (x * scale);
-  const planetY = HEIGHT/2 + (y * scale);
-
-  return (
-    <circle
-      key={uuidv4()}
-      cx={planetX}
-      cy={planetY}
-      r={orbitRadius}
-      stroke={"#fff"}
-      stroke-dasharray={"5,5"}
-      fillOpacity={0}
     />
   )
 }

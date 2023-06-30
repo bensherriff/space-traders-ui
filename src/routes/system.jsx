@@ -2,11 +2,9 @@ import {useParams} from 'react-router-dom';
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from 'react';
 import { Storage, Text } from '../js';
-import { SystemMap } from '../components/Canvas';
 import { NavLink } from "react-router-dom";
 import { SystemHeader } from '../components/Location/LocationHeader';
-import Tag from '../components/Tag';
-import SystemSVG from '../components/SVG/System';
+import SystemMap  from '../components/SVG/System';
 
 export default function System() {
   const {systemId} = useParams();
@@ -55,7 +53,7 @@ export default function System() {
               ): <></>}
             </div>
             <div className='w-1/2'>
-              <SystemSVG system={system}/>
+              <SystemMap system={system}/>
             </div>
           </div>
         </div>

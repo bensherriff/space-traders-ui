@@ -4,6 +4,7 @@ import { Storage } from '../js';
 import SymbolAutoComplete from '../components/Form/SymbolAutoComplete';
 import { Button } from '../components';
 import { NavLink } from 'react-router-dom';
+import GalaxyMap from '../components/SVG/Galaxy';
 
 export default function Galaxy() {
   const [systems, setSystems] = useState(null);
@@ -31,8 +32,9 @@ export default function Galaxy() {
         <>If this is your first time seeing this message, it may take up to 5 minutes to completely populate the galaxy due to rate limits. Please wait... </>
       ):
       <>
-      <SymbolAutoComplete items={systems} selectedItem={selectedSystem} setSelectedItem={setSelectedSystem} />
-      <NavLink to={`/system/${selectedSystem.symbol}`}><Button>View System</Button></NavLink>
+        <SymbolAutoComplete items={systems} selectedItem={selectedSystem} setSelectedItem={setSelectedSystem} />
+        <NavLink to={`/system/${selectedSystem.symbol}`}><Button>View System</Button></NavLink>
+        <GalaxyMap systems={systems}/>
       </>
       }
     </div>
