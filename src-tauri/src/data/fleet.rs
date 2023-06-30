@@ -35,6 +35,26 @@ pub fn get_ship(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symbol: &
   }
 }
 
+pub fn get_ships(pool: &Pool<ConnectionManager<SqliteConnection>>) -> Vec<Ship> {
+  use schema::fleet;
+
+  let mut connection = pool.get().unwrap();
+  let result: Result<Vec<ShipDB>, diesel::result::Error> = fleet::table
+    .select(ShipDB::as_select())
+    .load(&mut connection);
+
+  match result {
+    Ok(r) => {
+      let mut ships: Vec<Ship> = vec![];
+      for (_index, ship_db) in r.iter().enumerate() {
+        ships.push(build_ship_from_db(pool, ship_db));
+      }
+      ships
+    },
+    Err(_err) => vec![]
+  }
+}
+
 pub fn get_ships_at_waypoint(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoint: &str) -> Vec<Ship> {
   use schema::fleet;
 

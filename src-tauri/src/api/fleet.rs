@@ -9,16 +9,21 @@ use super::requests::{ResponseObject, ErrorObject};
 
 #[tauri::command]
 pub async fn list_ships(state: State<'_, DataState>, token: String) -> Result<ResponseObject<Vec<Ship>>, ()> {
-  let result = state.request.get_request::<Vec<Ship>>(token, "/my/ships".to_string(), None).await;
-  match &result.data {
-    Some(data) => {
-      for ship in data.iter() {
-        insert_ship(&state.pool, ship)
-      }
-    },
-    None => {}
-  };
-  Ok(result)
+    let ships = crate::data::fleet::get_ships(&state.pool);
+    if ships.len() > 0 {
+      return Ok(ResponseObject { data: Some(ships), error: None, meta: None })
+    } else {
+      let result = state.request.get_request::<Vec<Ship>>(token, "/my/ships".to_string(), None).await;
+      match &result.data {
+        Some(data) => {
+          for ship in data.iter() {
+            insert_ship(&state.pool, ship)
+          }
+        },
+        None => {}
+      };
+      Ok(result)
+    }
 }
 
 #[tauri::command]
@@ -202,6 +207,7 @@ pub async fn jump_ship(state: State<'_, DataState>, token: String, symbol: Strin
                     Some(response) => {
                       crate::data::fleet::update_ship_navigation(&state.pool, &symbol, &response.nav);
                       let timeout = calculate_timeout(response.nav.route.departure_time.to_string(), response.nav.route.arrival_time.to_string());
+                      debug!("Waiting for navigate arrival: {}", timeout);
                       thread::sleep(Duration::from_secs(timeout as u64));
                       return internal_jump(state.to_owned(), token.to_owned(), symbol.to_owned(), system.to_owned()).await;
                     }

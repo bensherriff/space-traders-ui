@@ -6,7 +6,7 @@ import { SystemMap } from '../components/Canvas';
 import { NavLink } from "react-router-dom";
 import { SystemHeader } from '../components/Location/LocationHeader';
 import Tag from '../components/Tag';
-import SystemSVG from '../components/SystemSVG';
+import SystemSVG from '../components/SVG/System';
 
 export default function System() {
   const {systemId} = useParams();
@@ -44,9 +44,9 @@ export default function System() {
                     let colors = Text.waypointTypeColor(waypoint.type);
                     return (
                       <NavLink key={index} to={`/system/${systemId}/${waypoint.symbol}`}>
-                        <div className={`block px-2 py-8 mb-1 mr-1 rounded-md bg-stone-900 hover:bg-stone-950 text-lg`}>
-                          <span className={`${colors.bgTW} ${colors.textTW} p-3 rounded-md`}>{Text.capitalize(waypoint.type)}</span>
-                          <span className='float-right'>{waypoint.symbol}</span>
+                        <div className={`block pr-2 mb-1 mr-1 rounded-md bg-stone-900 hover:bg-stone-950 text-lg`}>
+                          <span className={`${colors.bgTW} ${colors.textTW} inline-flex w-48 p-3 rounded-md`}>{Text.capitalize(waypoint.type)}</span>
+                          <span className='pl-2'>{waypoint.symbol}</span>
                         </div>
                       </NavLink>
                     )

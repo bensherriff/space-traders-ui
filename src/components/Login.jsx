@@ -37,7 +37,7 @@ export default function Login() {
   }
 
   async function register() {
-    await invoke("register", {faction: faction, symbol: name, email: email }).then(response => {
+    invoke("register", {faction: faction, symbol: name, email: email }).then(response => {
       if (response && response.data) {
         console.log(response);
         setToken(response.data.token);
@@ -51,7 +51,7 @@ export default function Login() {
   }
 
   async function get_my_agent() {
-    await invoke("get_my_agent", { token: token }).then(response => {
+    invoke("get_my_agent", { token: token }).then(response => {
       if (response && response.data) {
         setTokenError("");
         setToken(token);
@@ -65,7 +65,7 @@ export default function Login() {
   }
 
   async function list_faction_strings() {
-    await invoke("list_faction_strings").then(response => {
+    invoke("list_faction_strings").then(response => {
       if (response && response.data) {
         setFactions(response.data);
         setFaction(response.data[0]);
@@ -74,7 +74,7 @@ export default function Login() {
   }
 
   async function get_status() {
-    await invoke("get_status").then(response => {
+    invoke("get_status").then(response => {
       if (response && response.data) {
         setStatus(response.data);
       }

@@ -59,7 +59,7 @@ impl Request {
       },
       None => {}
     }
-    trace!("{}", uri);
+    trace!("GET {}", uri);
     self.send(self.client.get(uri).bearer_auth(_token)).await
   }
   
@@ -67,7 +67,7 @@ impl Request {
     let uri: String = format!("{}{}", self.base_url, url);
     let _token = token.to_owned();
     let _body = body.to_owned();
-    trace!("{}: {:?}", uri, _body);
+    trace!("POST {} {:?}", uri, _body);
     match _body {
       None => {
         self.send(self.client.post(uri).bearer_auth(_token).header("Content-Length", "0"))
@@ -82,7 +82,7 @@ impl Request {
     let uri: String = format!("{}{}", self.base_url, url);
     let _token = token.to_owned();
     let _body = body.to_owned();
-    trace!("{}: {:?}", uri, _body);
+    trace!("PATCH {} {:?}", uri, _body);
     match _body {
       None => {
         self.send(self.client.patch(uri).bearer_auth(_token).header("Content-Length", "0"))

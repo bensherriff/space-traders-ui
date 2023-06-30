@@ -221,7 +221,7 @@ function JumpGate({systemId, waypointId}) {
   }, []);
 
   async function get_jump_gate() {
-    await invoke("get_jump_gate", { token: Storage.getToken(), system: systemId, waypoint: waypointId }).then(response => {
+    invoke("get_jump_gate", { token: Storage.getToken(), system: systemId, waypoint: waypointId }).then(response => {
       if (response && response.data) {
         setJumpGate(response.data);
       }
@@ -362,7 +362,6 @@ function MarketAction({good, ship}) {
     if (marketAction == 'buy') {
       invoke("purchase_cargo", { token: Storage.getToken(), symbol: ship.symbol, itemSymbol: good.symbol, units: amount}).then((response) => {
         if (response && response.data) {
-          console.log(response.data);
           setAgent(response.data.agent);
         } else if (response && response.error) {
           console.error(response.error.message);
@@ -372,7 +371,6 @@ function MarketAction({good, ship}) {
     } else if (marketAction == 'sell') {
       invoke("sell_cargo", { token: Storage.getToken(), symbol: ship.symbol, itemSymbol: good.symbol, units: amount}).then((response) => {
         if (response && response.data) {
-          console.log(response.data);
           setAgent(response.data.agent);
         } else if (response && response.error) {
           console.error(response.error.message);

@@ -5,7 +5,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { Storage, Text, State } from '../js';
 import { Button, Error, ErrorText } from '../components';
 import { ProgressBarWithLabel } from '../components/ProgressBar';
-import { CargoInfo, ModulesInfo, MountsInfo, NavStatusLink, Navigation } from '../components/Ship';
+import { CargoInfo, ModulesInfo, MountsInfo, Navigation } from '../components/Ship';
 
 export default function Ship() {
   const [agent, setAgent] = useRecoilState(State.agentState);
@@ -20,10 +20,6 @@ export default function Ship() {
   useEffect(() => {
     get_ship();
   }, []);
-
-  function update_ship(ship) {
-    setShip(ship);
-  }
 
   async function get_ship() {
     invoke("get_ship", { token: Storage.getToken(), symbol: shipId}).then(response => {
@@ -52,7 +48,7 @@ export default function Ship() {
     invoke('refuel_ship', { token: Storage.getToken(), symbol: ship.symbol }).then(response => {
       if (response && response.data) {
         setAgent(response.data.agent);
-        update_ship({
+        setShip({
           ...ship,
           fuel: {
             ...ship.fuel,
@@ -105,7 +101,7 @@ export default function Ship() {
             </div>
           </div>
           <CargoInfo ship={ship}/>
-          <Navigation ship={ship} updateShip={update_ship}/>
+          <Navigation ship={ship} setShip={setShip}/>
           <div className='flex justify-center'>
             <ModulesInfo ship={ship}/>
             <MountsInfo ship={ship}/>
