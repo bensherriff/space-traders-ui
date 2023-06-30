@@ -65,6 +65,14 @@
   background-color: #e8e8e8;
 }
 
+/* svg text {
+  display: none;
+} */
+
+/* svg g:hover text {
+  display: block;
+} */
+
 /* Works on Firefox */
 * {
   scrollbar-width: thin;

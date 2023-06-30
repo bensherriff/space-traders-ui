@@ -269,7 +269,6 @@ pub async fn navigate_ship_anywhere(state: State<'_, DataState>, app_handle: tau
     }
     None => Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Ship not found".to_string() }), meta: None })
   }
-  
 }
 
 /// Update the nav data of a ship, such as the flight mode.
@@ -430,7 +429,7 @@ pub async fn navigate_ship_to_system(state: State<'_, DataState>, app_handle: ta
         let r = jump_ship(_state, _token, _symbol, path.pop().unwrap(), false).await.unwrap();
         match &r.data {
           Some(response) => {
-            debug!("Jump attempted to system: {}; cooldown: {} seconds", response.nav.system_symbol, response.cooldown.total_seconds);
+            debug!("Jumped to system: {}; cooldown: {} seconds", response.nav.system_symbol, response.cooldown.total_seconds);
             thread::sleep(Duration::from_secs(response.cooldown.total_seconds as u64));
           }
           None => {

@@ -52,7 +52,7 @@ fn main() {
         LogTarget::Stdout,
         LogTarget::Webview
       ])
-      .level_for("space_traders_ui", if debug { LevelFilter::Trace } else { LevelFilter::Info })
+      .level_for("space_traders_ui", if debug { LevelFilter::Debug } else { LevelFilter::Info })
       .level(LevelFilter::Info)
       .build())
     .plugin(tauri_plugin_store::Builder::default().build())

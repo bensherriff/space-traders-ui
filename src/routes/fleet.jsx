@@ -55,6 +55,14 @@ export default function Fleet() {
                   Waypoint
                 </NavLink>
               </div>
+              <div className="-ml-px flex w-0 flex-1">
+                <NavLink
+                  to={`/system/${ship.nav.systemSymbol}`}
+                  className="relative inline-flex w-0 flex-1 items-center justify-center gap-x-3 rounded-br-lg border border-transparent py-4 text-sm font-semibold text-gray-900"
+                >
+                  System
+                </NavLink>
+              </div>
             </div>
           </div>
         </li>
