@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Text } from "../../js";
 import { v4 as uuidv4 } from 'uuid';
 import { SystemObject } from ".";
-import { atom } from "recoil";
-import { useRecoilState, useRecoilValue } from "recoil";
 
 const WIDTH = 1000;
 const HEIGHT = 1000;
@@ -12,19 +10,11 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 20;
 const SCROLL_SENSITIVITY = 0.005;
 
-const mapState = atom({
-  key: 'mapState',
-  default: {
-    cameraZoom: 6,
-    lastZoom: 6,
-    cameraOffset: {x: 0, y: 0}
-  }
-})
-
 export default function SystemMap({ system }) {
   const svgRef = useRef(null);
   const [displayText, setDisplayText] = useState("");
-  const [map, setMap] = useRecoilState(mapState);
+  const [cameraZoom, setCameraZoom] = useState(6);
+  const [cameraOffset, setCameraOffset] = useState({ x: 0, y: 0 });
 
   const waypointTypes = ["PLANET", "GAS_GIANT", "JUMP_GATE", "ASTEROID_FIELD", "NEBULA", "DEBRIS_FIELD", "GRAVITY_WELL"];
   const orbitalTypes = ["MOON", "ORBITAL_STATION"];
@@ -32,7 +22,7 @@ export default function SystemMap({ system }) {
   const waypoints = system.waypoints.filter((waypoint) => waypointTypes.includes(waypoint.type));
   const orbitals = system.waypoints.filter((waypoint) => orbitalTypes.includes(waypoint.type));
 
-  const satelliteOrbitRadius = 5 * map.cameraZoom;
+  const satelliteOrbitRadius = 5 * cameraZoom;
 
   useEffect(() => {
     if (svgRef.current) {
@@ -40,21 +30,20 @@ export default function SystemMap({ system }) {
 
       let isDragging = false;
       let dragStart = {x: 0, y: 0};
+      let lastZoom = 6;
+      let zoom = 6;
+      let offset = {x: 0, y: 0};
 
       function adjustZoom(zoomAmount, zoomFactor) {
         if (!isDragging) {
-          let cameraZoom = map.cameraZoom;
           if (zoomAmount) {
-            cameraZoom += zoomAmount;
+            zoom += zoomAmount;
           } else if (zoomFactor) {
-            zoomFactor*lastZoom;
+            zoom = zoomFactor*lastZoom;
           }
-          cameraZoom = Math.min(cameraZoom, MAX_ZOOM);
-          cameraZoom = Math.max(cameraZoom, MIN_ZOOM);
-          setMap({
-            ...map,
-            cameraZoom: cameraZoom
-          });
+          zoom = Math.min(zoom, MAX_ZOOM);
+          zoom = Math.max(zoom, MIN_ZOOM);
+          setCameraZoom(zoom);
         }
       }
 
@@ -68,32 +57,26 @@ export default function SystemMap({ system }) {
 
       function onPointerDown(event) {
         isDragging = true;
-        dragStart.x = getEventLocation(event).x / map.cameraZoom - map.cameraOffset.x;
-        dragStart.y = getEventLocation(event).y / map.cameraZoom - map.cameraOffset.y;
+        dragStart.x = getEventLocation(event).x / zoom - offset.x;
+        dragStart.y = getEventLocation(event).y / zoom - offset.y;
       }
 
       function onPointerUp(event) {
         isDragging = false;
-        lastZoom = map.cameraZoom;
+        lastZoom = zoom;
       }
 
       function onPointerMove(event) {
         if (isDragging) {
-          let offset = {x: 0, y: 0};
-          offset.x = getEventLocation(event).x / map.cameraZoom - dragStart.x;
-          // offset.x = Math.min(offset.x, WIDTH*2);
-          // offset.x = Math.max(offset.x, -WIDTH/2);
-          offset.y = getEventLocation(event).y / map.cameraZoom - dragStart.y;
-          // offset.y = Math.min(offset.y, HEIGHT*2);
-          // offset.y = Math.max(offset.y, -HEIGHT/2);
-          setMap({
-            ...map,
-            cameraOffset: offset
-          });
+          offset = {
+            x: getEventLocation(event).x / zoom - dragStart.x,
+            y: getEventLocation(event).y / zoom - dragStart.y
+          }
+          setCameraOffset(offset);
         }
       }
 
-      svg.addEventListener("wheel", (event) => adjustZoom(-event.deltaY*(SCROLL_SENSITIVITY*(map.cameraZoom/3))));
+      svg.addEventListener("wheel", (event) => adjustZoom(-event.deltaY*(SCROLL_SENSITIVITY*(zoom/3))));
       svg.addEventListener("mousedown", onPointerDown);
       svg.addEventListener("mouseup", onPointerUp);
       svg.addEventListener("mousemove", onPointerMove);
@@ -123,17 +106,17 @@ export default function SystemMap({ system }) {
     >
       <g className="js-svg-wrapper">
         {waypoints.map((waypoint) => (
-          <WaypointOrbit x={waypoint.x} y={waypoint.y}/>
+          <WaypointOrbit key={`waypoint-orbit-${waypoint.symbol}`} x={waypoint.x} y={waypoint.y} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
         ))}
         {orbitals.map((waypoint) => (
-          <SatelliteOrbit x={waypoint.x} y={waypoint.y} orbitRadius={satelliteOrbitRadius}/>
+          <SatelliteOrbit key={`satellite-orbit-${waypoint.symbol}`} x={waypoint.x} y={waypoint.y} orbitRadius={satelliteOrbitRadius} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
         ))}
-        <Star system={system} setDisplayText={setDisplayText}/>
+        <Star system={system} setDisplayText={setDisplayText} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
         {waypoints.map((waypoint) => (
-          <Waypoint waypoint={waypoint} setDisplayText={setDisplayText}/>
+          <Waypoint key={`waypoint-${waypoint.symbol}`} waypoint={waypoint} setDisplayText={setDisplayText} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
         ))}
         {orbitals.map((waypoint) => (
-          <Satellite waypoint={waypoint} setDisplayText={setDisplayText} orbitRadius={satelliteOrbitRadius}/>
+          <Satellite key={`satellite-${waypoint.symbol}`} waypoint={waypoint} setDisplayText={setDisplayText} orbitRadius={satelliteOrbitRadius} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
         ))}
         <text x={50} y={HEIGHT - 10} fontSize="2em" fill={"#fff"}>{displayText}</text>
       </g>
@@ -141,14 +124,13 @@ export default function SystemMap({ system }) {
   )
 }
 
-function Star({ system, setDisplayText=() => {} }) {
-  let map = useRecoilValue(mapState);
+function Star({ system, setDisplayText=() => {}, cameraZoom, cameraOffset }) {
   const color = Text.systemTypeColor(system.type);
   return (
     <SystemObject
-      x={map.cameraOffset.x + WIDTH/2}
-      y={map.cameraOffset.y + HEIGHT/2}
-      r={7 * map.cameraZoom}
+      x={cameraOffset.x + WIDTH/2}
+      y={cameraOffset.y + HEIGHT/2}
+      r={7 * cameraZoom}
       fill={color.bg}
       onMouseEnter={() => {setDisplayText(Text.capitalize(system.type))}}
       onMouseLeave={() => {setDisplayText("")}}
@@ -156,20 +138,19 @@ function Star({ system, setDisplayText=() => {} }) {
   )
 }
 
-function Waypoint({ waypoint, setDisplayText=() => {} }) {
-  let map = useRecoilValue(mapState);
+function Waypoint({ waypoint, setDisplayText=() => {}, cameraZoom, cameraOffset }) {
   const navigate = useNavigate();
   const color = Text.waypointTypeColor(waypoint.type);
   const split = waypoint.symbol.split("-");
-  const x = WIDTH/2 + (waypoint.x * map.cameraZoom);
-  const y = HEIGHT/2 + (waypoint.y * map.cameraZoom);
+  const x = WIDTH/2 + (waypoint.x * cameraZoom);
+  const y = HEIGHT/2 + (waypoint.y * cameraZoom);
 
   return (
     <SystemObject
       key={waypoint.symbol}
-      x={map.cameraOffset.x + x}
-      y={map.cameraOffset.y +y}
-      r={waypoint.type == "JUMP_GATE"? 2 * map.cameraZoom: 3 * map.cameraZoom}
+      x={cameraOffset.x + x}
+      y={cameraOffset.y +y}
+      r={waypoint.type == "JUMP_GATE"? 2 * cameraZoom: 3 * cameraZoom}
       fill={color.bg}
       onClick={() => {
         navigate(`/system/${split[0]}-${split[1]}/${waypoint.symbol}`);
@@ -180,15 +161,14 @@ function Waypoint({ waypoint, setDisplayText=() => {} }) {
   )
 }
 
-function WaypointOrbit({ x=WIDTH/2, y=HEIGHT/2 }) {
-  let map = useRecoilValue(mapState);
-  const orbitRadius = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) * map.cameraZoom;
+function WaypointOrbit({ x=WIDTH/2, y=HEIGHT/2, cameraZoom, cameraOffset }) {
+  const orbitRadius = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) * cameraZoom;
 
   return (
     <circle
       key={uuidv4()}
-      cx={map.cameraOffset.x + WIDTH/2}
-      cy={map.cameraOffset.y + HEIGHT/2}
+      cx={cameraOffset.x + WIDTH/2}
+      cy={cameraOffset.y + HEIGHT/2}
       r={orbitRadius}
       stroke={"#fff"}
       strokeDasharray={"5,5"}
@@ -197,22 +177,21 @@ function WaypointOrbit({ x=WIDTH/2, y=HEIGHT/2 }) {
   )
 }
 
-function Satellite({ waypoint, setDisplayText=() => {}, orbitRadius=5 }) {
-  let map = useRecoilValue(mapState);
+function Satellite({ waypoint, setDisplayText=() => {}, orbitRadius=5, cameraZoom, cameraOffset }) {
   const navigate = useNavigate();
   const color = Text.waypointTypeColor(waypoint.type);
   const split = waypoint.symbol.split("-");
-  const planetX = WIDTH/2 + (waypoint.x * map.cameraZoom);
-  const planetY = HEIGHT/2 + (waypoint.y * map.cameraZoom);
+  const planetX = WIDTH/2 + (waypoint.x * cameraZoom);
+  const planetY = HEIGHT/2 + (waypoint.y * cameraZoom);
   const x = planetX + orbitRadius * Math.cos((2 * Math.PI));
   const y = planetY + orbitRadius * Math.sin((2 * Math.PI));
 
   return (
     <SystemObject
       key={waypoint.symbol}
-      x={map.cameraOffset.x + x}
-      y={map.cameraOffset.y + y}
-      r={1 * map.cameraZoom}
+      x={cameraOffset.x + x}
+      y={cameraOffset.y + y}
+      r={1 * cameraZoom}
       fill={color.bg}
       onClick={() => {
         navigate(`/system/${split[0]}-${split[1]}/${waypoint.symbol}`);
@@ -223,19 +202,18 @@ function Satellite({ waypoint, setDisplayText=() => {}, orbitRadius=5 }) {
   )
 }
 
-function SatelliteOrbit({ x=WIDTH/2, y=HEIGHT/2, orbitRadius=5 }) {
-  let map = useRecoilValue(mapState);
-  const planetX = WIDTH/2 + (x * map.cameraZoom);
-  const planetY = HEIGHT/2 + (y * map.cameraZoom);
+function SatelliteOrbit({ x=WIDTH/2, y=HEIGHT/2, orbitRadius=5, cameraZoom, cameraOffset }) {
+  const planetX = WIDTH/2 + (x * cameraZoom);
+  const planetY = HEIGHT/2 + (y * cameraZoom);
 
   return (
     <circle
       key={uuidv4()}
-      cx={map.cameraOffset.x + planetX}
-      cy={map.cameraOffset.y + planetY}
+      cx={cameraOffset.x + planetX}
+      cy={cameraOffset.y + planetY}
       r={orbitRadius}
       stroke={"#fff"}
-      stroke-dasharray={"5,5"}
+      strokeDasharray={"5,5"}
       fillOpacity={0}
     />
   )
