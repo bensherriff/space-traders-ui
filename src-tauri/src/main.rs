@@ -14,6 +14,7 @@ use reqwest::Client;
 use tauri_plugin_log::LogTarget;
 
 mod api;
+mod app;
 mod data;
 mod models;
 

@@ -420,7 +420,7 @@ pub async fn negotiate_contract(state: State<'_, DataState>, token: String, symb
 pub async fn navigate_ship_to_system(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, symbol: String, start_system: String, end_system: String) -> Result<ResponseObject<ShipNavigateResponse>, ()> {
   let _state = state.to_owned();
   let _token = token.to_owned();
-  let p = crate::api::systems::get_path_to_system(_state, app_handle.to_owned(), _token, start_system, end_system).await.unwrap();
+  let p = crate::app::get_path_to_system(_state, app_handle.to_owned(), _token, start_system, end_system).await.unwrap();
   match &p.data {
     Some(system_path) => {
       let mut path: Vec<String> = system_path.to_owned();
