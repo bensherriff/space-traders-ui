@@ -2,7 +2,7 @@ use log::warn;
 use tauri::State;
 use tauri_plugin_store::StoreBuilder;
 
-use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, DataState, data::get_store_path};
+use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, DataState, data::get_store_path, CACHE};
 
 use super::requests::{ResponseObject};
 
@@ -16,10 +16,13 @@ pub async fn list_systems(state: State<'_, DataState>, token: String, limit: u64
     ("page", _page)
   ];
   let result = state.request.get_request::<Vec<System>>(token, "/systems".to_string(), Some(query)).await;
+  let mut cache = CACHE.get().write().unwrap();
+
   match &result.data {
     Some(data) => {
       for system in data {
         crate::data::system::insert_system(&state.pool, system);
+        *cache.systems.entry(system.symbol.to_owned()).or_insert(system.to_owned()) = system.to_owned();
       }
     }
     None => {}
