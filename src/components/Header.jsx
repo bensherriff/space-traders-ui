@@ -24,6 +24,7 @@ export default function Header() {
             <HeaderItem to={`/system/${system}/${agent.headquarters}`}><>
               <FontAwesomeIcon className="text-orange-600 pr-2" icon={faHouse}/>{agent.headquarters}
             </></HeaderItem>
+            <HeaderItem to={`/system/${system}`}>({system})</HeaderItem>
           </span>
       </div>
     </header>

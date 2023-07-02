@@ -6,9 +6,10 @@ import { SystemObject } from ".";
 
 const WIDTH = 1000;
 const HEIGHT = 1000;
-const MIN_ZOOM = 1;
+const MIN_ZOOM = 2;
 const MAX_ZOOM = 20;
 const SCROLL_SENSITIVITY = 0.005;
+const HIDE_SATELLITES_ZOOM = 2.8;
 
 export default function SystemMap({ system }) {
   const svgRef = useRef(null);
@@ -92,6 +93,20 @@ export default function SystemMap({ system }) {
 
   }, []);
 
+  let previousOrbitalCoords = { x: 0, y: 0 };
+  let orbitalCount = 1;
+
+  function calculateOrbitalRadius(waypoint, index) {
+    if (waypoint.x == previousOrbitalCoords.x && waypoint.y == previousOrbitalCoords.y) {
+      orbitalCount++;
+    } else {
+      orbitalCount = 1;
+    }
+    // Reset the previous orbital coords if we're on the last orbital, otherwise set it to the current waypoint
+    previousOrbitalCoords = index == orbitals.length - 1? {x: 0, y: 0}: { x: waypoint.x, y: waypoint.y };
+    return satelliteOrbitRadius * (orbitalCount * 0.6) + (2 * cameraZoom);
+  }
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -108,16 +123,28 @@ export default function SystemMap({ system }) {
         {waypoints.map((waypoint) => (
           <WaypointOrbit key={`waypoint-orbit-${waypoint.symbol}`} x={waypoint.x} y={waypoint.y} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
         ))}
-        {orbitals.map((waypoint) => (
-          <SatelliteOrbit key={`satellite-orbit-${waypoint.symbol}`} x={waypoint.x} y={waypoint.y} orbitRadius={satelliteOrbitRadius} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
-        ))}
+        {cameraZoom > HIDE_SATELLITES_ZOOM? 
+        <>
+          {orbitals.map((waypoint, index) => {
+            let orbitRadius = calculateOrbitalRadius(waypoint, index);
+            return (
+              <SatelliteOrbit key={`satellite-orbit-${waypoint.symbol}`} x={waypoint.x} y={waypoint.y} orbitRadius={orbitRadius} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
+            );
+          })}
+        </>: <></>}
         <Star system={system} setDisplayText={setDisplayText} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
         {waypoints.map((waypoint) => (
           <Waypoint key={`waypoint-${waypoint.symbol}`} waypoint={waypoint} setDisplayText={setDisplayText} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
         ))}
-        {orbitals.map((waypoint) => (
-          <Satellite key={`satellite-${waypoint.symbol}`} waypoint={waypoint} setDisplayText={setDisplayText} orbitRadius={satelliteOrbitRadius} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
-        ))}
+        {cameraZoom > HIDE_SATELLITES_ZOOM?
+        <>
+          {orbitals.map((waypoint, index) => {
+            let orbitRadius = calculateOrbitalRadius(waypoint, index);
+            return (
+              <Satellite key={`satellite-${waypoint.symbol}`} waypoint={waypoint} setDisplayText={setDisplayText} orbitRadius={orbitRadius} cameraZoom={cameraZoom} cameraOffset={cameraOffset}/>
+            )
+          })}
+        </>: <></>}
         <text x={50} y={HEIGHT - 10} fontSize="2em" fill={"#fff"}>{displayText}</text>
       </g>
     </svg>
@@ -171,7 +198,7 @@ function WaypointOrbit({ x=WIDTH/2, y=HEIGHT/2, cameraZoom, cameraOffset }) {
       cy={cameraOffset.y + HEIGHT/2}
       r={orbitRadius}
       stroke={"#fff"}
-      strokeDasharray={"5,5"}
+      strokeDasharray={"5,10"}
       fillOpacity={0}
     />
   )
@@ -213,7 +240,7 @@ function SatelliteOrbit({ x=WIDTH/2, y=HEIGHT/2, orbitRadius=5, cameraZoom, came
       cy={cameraOffset.y + planetY}
       r={orbitRadius}
       stroke={"#fff"}
-      strokeDasharray={"5,5"}
+      strokeDasharray={"5,20"}
       fillOpacity={0}
     />
   )
