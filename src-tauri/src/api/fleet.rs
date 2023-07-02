@@ -258,6 +258,7 @@ pub async fn navigate_ship(state: State<'_, DataState>, token: String, symbol: S
 
 #[tauri::command]
 pub async fn navigate_ship_anywhere(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, symbol: String, waypoint: String, system: String) -> Result<ResponseObject<ShipNavigateResponse>, ()> {
+  debug!("Navigating ship {} to {} in system {}", symbol, waypoint, system);
   let s = get_ship(state.to_owned(), token.to_owned(), symbol.to_owned()).await.unwrap();
   match &s.data {
     Some(ship) => {
@@ -424,10 +425,9 @@ pub async fn navigate_ship_to_system(state: State<'_, DataState>, app_handle: ta
   match &p.data {
     Some(system_path) => {
       let mut path: Vec<String> = system_path.to_owned();
-      debug!("Navigation path for {}: {:?}", symbol, path);
+      debug!("Found path to {}: {:?}", symbol, path);
       path.reverse(); // Reverse the path with the next system at the end
       let _ = path.pop(); // Remove the current system from the path
-      println!("Path: {:?}", path);
       while !path.is_empty() {
         let _state = state.to_owned();
         let _token = token.to_owned();
@@ -453,7 +453,7 @@ pub async fn navigate_ship_to_system(state: State<'_, DataState>, app_handle: ta
     None => {
       match &p.error {
         Some(e) => return Ok(ResponseObject { data: None, error: Some(e.to_owned()), meta: None }),
-        None => {}
+        None => return Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Unable to find path to system".to_string() }), meta: None })
       };
     }
   };

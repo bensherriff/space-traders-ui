@@ -19,7 +19,7 @@ export default function Waypoint() {
   const [ships, setShips] = useState({});
   const [localShips, setLocalShips] = useState([]);
   const [localQuery, setLocalQuery] = useState("");
-  const [currentShip, setCurrentShip] = useState(null);
+  const [localShip, setLocalShip] = useState(null);
   const [otherShips, setOtherShips] = useState([]);
   const [otherQuery, setOtherQuery] = useState("");
   const [otherShip, setOtherShip] = useState(null);
@@ -55,7 +55,7 @@ export default function Waypoint() {
           if (res && res.data) {
             setLocalShips(res.data);
             if (res.data.length > 0) {
-              setCurrentShip(res.data[0]);
+              setLocalShip(res.data[0]);
               // Other ships
               let _otherShips = Object.values(_ships).filter(object1 => {
                 return !res.data.some(object2 => {
@@ -68,7 +68,7 @@ export default function Waypoint() {
               }
             } else {
               setLocalShips([]);
-              setCurrentShip(null);
+              setLocalShip(null);
               setOtherShips(response.data);
               if (response.data.length > 0) {
                 setOtherShip(response.data[0]);
@@ -105,9 +105,9 @@ export default function Waypoint() {
   }
 
   async function orbit_ship() {
-    invoke("orbit_ship", { token: Storage.getToken(), symbol: currentShip.symbol}).then(response => {
+    invoke("orbit_ship", { token: Storage.getToken(), symbol: localShip.symbol}).then(response => {
       if (response && response.data) {
-        setCurrentShip(null);
+        setLocalShip(null);
         get_ships();
       }
     });
@@ -177,22 +177,22 @@ export default function Waypoint() {
                 <JumpGate systemId={systemId} waypointId={waypointId}/>
               ): <></>}
               {marketToggle? (
-                <Marketplace systemId={systemId} waypointId={waypointId} ship={currentShip}/>
+                <Marketplace systemId={systemId} waypointId={waypointId} ship={localShip}/>
               ): <></>}
               {shipyardToggle? (
                 <Shipyard systemId={systemId} waypointId={waypointId}/>
               ): <></>}
             </div>
             <div className='w-full h-full ml-1'>
-              {currentShip? (
+              {localShip? (
                 <>
                   <h1 className='text-center text-2xl'>Current Ship</h1>
-                  <SymbolAutoComplete items={localShips} selectedItem={currentShip} setSelectedShip={setCurrentShip} />
-                  <NavLink to={`/fleet/${currentShip.symbol}`}>Ship Info</NavLink>
+                  <SymbolAutoComplete items={localShips} selectedItem={localShip} setSelectedShip={setLocalShip} />
+                  <NavLink to={`/fleet/${localShip.symbol}`}>Ship Info</NavLink>
                   <Button onClick={orbit_ship}>Orbit</Button>
                 </>
               ): <></>}
-              {currentShip && otherShip? ( <hr className='my-4'/> ): <></>}
+              {localShip && otherShip? ( <hr className='my-4'/> ): <></>}
               {otherShip? (
                 <>
                   <h1 className='text-center text-2xl'>Remote Ships</h1>

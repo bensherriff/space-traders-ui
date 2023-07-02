@@ -116,6 +116,7 @@ fn main() {
       api::systems::get_system,
       api::systems::list_waypoints,
       api::systems::get_waypoint,
+      api::systems::get_waypoints,
       api::systems::get_market,
       api::systems::get_shipyard,
       api::systems::get_jump_gate
