@@ -5,21 +5,25 @@ import { EllipsisVerticalIcon } from '@heroicons/react/20/solid'
 import { NavLink } from "react-router-dom";
 import { Storage, Text } from '../js';
 import { invoke } from "@tauri-apps/api";
+import { IContract, IResponse } from "../js/interfaces";
 
 export default function Contracts() {
-  const [contracts, setContracts] = useState([]);
+  const [contracts, setContracts] = useState<IContract[]>([]);
 
   useEffect(() => {
-    invoke("list_contracts", { token: Storage.getToken() }).then((response) => {
-      if (response && response.data) {
-        setContracts(response.data);
-      } else if (response && response.error) {
-        console.error(response.error);
-      }
-    });
+    listContracts();
   }, []);
 
-  function classNames(...classes) {
+  async function listContracts() {
+    const response: IResponse = await invoke("list_contracts", { token: Storage.getToken() });
+    if (response && response.data) {
+      setContracts(response.data);
+    } else if (response && response.error) {
+      console.error(response.error);
+    }
+  }
+
+  function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(' ')
   }
 
@@ -29,7 +33,7 @@ export default function Contracts() {
     Open: 'text-yellow-800 bg-yellow-50 ring-yellow-600/20',
   }
 
-  function determineStatus(contract) {
+  function determineStatus(contract: any) {
     if (contract.fulfilled) {
       return "Fulfilled";
     } else if (contract.accepted) {
@@ -59,7 +63,7 @@ export default function Contracts() {
               </div>
               <div className="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-400">
                 <p className="whitespace-nowrap">
-                  Expires on {Text.date(contract.expiration)}
+                  Expires on {Text.date(contract.deadlineToAccept)}
                 </p>
                 <svg viewBox="0 0 2 2" className="h-0.5 w-0.5 fill-current">
                   <circle cx={1} cy={1} r={1} />
