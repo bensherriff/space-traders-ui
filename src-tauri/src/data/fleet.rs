@@ -22,7 +22,7 @@ use crate::models::waypoint::WaypointType;
 use chrono::{DateTime, Local};
 use diesel::{prelude::*, insert_into, replace_into, delete, update};
 use diesel::{RunQueryDsl, QueryDsl, SqliteConnection, r2d2::{Pool, ConnectionManager}};
-use log::{warn, error, debug};
+use log::{error, debug};
 
 pub fn get_ship(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symbol: &str) -> Option<Ship> {
   use schema::fleet;

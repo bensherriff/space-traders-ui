@@ -6,7 +6,7 @@ export default function Footer() {
   const [agent, setAgent] = useRecoilState(State.agentState);
 
   function logout() {
-    setAgent({});
+    setAgent(null);
   }
 
   return (
