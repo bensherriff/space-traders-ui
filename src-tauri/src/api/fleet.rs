@@ -123,10 +123,21 @@ pub async fn dock_ship(state: State<'_, DataState>, token: String, symbol: Strin
 /// Surveys will eventually expire after a period of time.
 /// Multiple ships can use the same survey for extraction.
 #[tauri::command]
-pub async fn create_survey(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<SurveyResponse>, ()> {
-  let url = format!("/my/ships/{}/survey", symbol);
-  let result = state.request.post_request::<SurveyResponse>(token, url, None).await;
-  Ok(result)
+pub async fn create_survey(state: State<'_, DataState>, token: String, symbol: String, waypoint: String) -> Result<ResponseObject<SurveyResponse>, ()> {
+  match crate::data::fleet::get_surveys(&state.pool, &waypoint) {
+    Some(s) => {
+      Ok(ResponseObject { data: Some(s), error: None, meta: None })
+    }
+    None => {
+      let url = format!("/my/ships/{}/survey", symbol);
+      let result = state.request.post_request::<SurveyResponse>(token, url, None).await;
+      match &result.data {
+        Some(data) => crate::data::fleet::insert_surveys(&state.pool, &data),
+        None => {}
+      };
+      Ok(result)
+    }
+  }
 }
 
 /// Extract resources from the waypoint into your ship. Send an optional survey as the payload to target specific yields.
@@ -141,6 +152,10 @@ pub async fn extract_resources(state: State<'_, DataState>, token: String, symbo
         "survey": serde_json::json!(s)
       });
       result = state.request.post_request::<ExtractedCargo>(token, url, Some(body.to_string())).await;
+      match &result.data {
+        Some(data) => crate::data::fleet::update_ship_cargo(&state.pool, &symbol, &data.cargo),
+        None => {}
+      };
     }
   }
   Ok(result)
@@ -257,7 +272,8 @@ pub async fn navigate_ship(state: State<'_, DataState>, token: String, symbol: S
 }
 
 #[tauri::command]
-pub async fn navigate_ship_anywhere(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, symbol: String, waypoint: String, system: String) -> Result<ResponseObject<ShipNavigateResponse>, ()> {
+pub async fn navigate_ship_anywhere(state: State<'_, DataState>, token: String, symbol: String, waypoint: String, system: String) -> Result<ResponseObject<ShipNavigateResponse>, ()> {
+  debug!("Navigating ship {} to {} in system {}", symbol, waypoint, system);
   let s = get_ship(state.to_owned(), token.to_owned(), symbol.to_owned()).await.unwrap();
   match &s.data {
     Some(ship) => {
@@ -265,7 +281,7 @@ pub async fn navigate_ship_anywhere(state: State<'_, DataState>, app_handle: tau
       if current_system == system {
         return navigate_ship(state.to_owned(), token.to_owned(), symbol.to_owned(), waypoint.to_owned()).await;
       } else {
-        let response = navigate_ship_to_system(state.to_owned(), app_handle, token.to_owned(), symbol.to_owned(), current_system.to_owned(), system.to_owned()).await.unwrap();
+        let response = navigate_ship_to_system(state.to_owned(), token.to_owned(), symbol.to_owned(), current_system.to_owned(), system.to_owned()).await.unwrap();
         if ship.nav.waypoint_symbol.to_string() == waypoint {
           return Ok(response);
         } else {
@@ -417,22 +433,16 @@ pub async fn negotiate_contract(state: State<'_, DataState>, token: String, symb
 }
 
 #[tauri::command]
-pub async fn navigate_ship_to_system(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, symbol: String, start_system: String, end_system: String) -> Result<ResponseObject<ShipNavigateResponse>, ()> {
-  let _state = state.to_owned();
-  let _token = token.to_owned();
-  let p = crate::app::get_path_to_system(_state, app_handle.to_owned(), _token, start_system, end_system).await.unwrap();
+pub async fn navigate_ship_to_system(state: State<'_, DataState>, token: String, symbol: String, start_system: String, end_system: String) -> Result<ResponseObject<ShipNavigateResponse>, ()> {
+  let p = crate::app::get_path_to_system(state.to_owned(), token.to_owned(), start_system.to_owned(), end_system.to_owned()).await.unwrap();
   match &p.data {
     Some(system_path) => {
       let mut path: Vec<String> = system_path.to_owned();
-      debug!("Navigation path for {}: {:?}", symbol, path);
+      debug!("Found path to {}: {:?}", symbol, path);
       path.reverse(); // Reverse the path with the next system at the end
       let _ = path.pop(); // Remove the current system from the path
-      println!("Path: {:?}", path);
       while !path.is_empty() {
-        let _state = state.to_owned();
-        let _token = token.to_owned();
-        let _symbol = symbol.to_owned();
-        let r = jump_ship(_state, _token, _symbol, path.pop().unwrap(), false).await.unwrap();
+        let r = jump_ship(state.to_owned(), token.to_owned(), symbol.to_owned(), path.pop().unwrap(), false).await.unwrap();
         match &r.data {
           Some(response) => {
             debug!("Jumped to system: {}; cooldown: {} seconds", response.nav.system_symbol, response.cooldown.total_seconds);
@@ -453,7 +463,7 @@ pub async fn navigate_ship_to_system(state: State<'_, DataState>, app_handle: ta
     None => {
       match &p.error {
         Some(e) => return Ok(ResponseObject { data: None, error: Some(e.to_owned()), meta: None }),
-        None => {}
+        None => return Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Unable to find path to system".to_string() }), meta: None })
       };
     }
   };

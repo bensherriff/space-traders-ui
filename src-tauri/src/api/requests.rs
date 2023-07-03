@@ -163,12 +163,28 @@ impl Request {
           let exp: u64 = 2;
           match &r.error {
             Some(error) => {
+              let timeout = exp.pow(attempt as u32);
+              // Rate Limiter
               if error.code == 429 {
-                thread::sleep(time::Duration::from_millis(exp.pow(attempt as u32) * 500));
+                thread::sleep(time::Duration::from_secs(timeout));
                 continue;
+              // DDoS Protection
               } else if error.code == 502 {
-                thread::sleep(time::Duration::from_millis(exp.pow(attempt as u32) * 5000));
+                thread::sleep(time::Duration::from_secs(timeout + (10 * attempt as u64)));
                 continue;
+              // Cooldown Conflict
+              } else if error.code == 4000 {
+                let mut parts = error.message.split_whitespace().map(|s| s.parse::<i32>());
+                match parts.next() {
+                  Some(Ok(remainder)) => {
+                    warn!("Action is still on cooldown for {} seconds.", remainder);
+                    thread::sleep(time::Duration::from_secs(remainder.to_owned() as u64));
+                  }
+                  _ => {
+                    warn!("Unable to determine cooldown time, defaulting to {} seconds.", timeout);
+                    thread::sleep(time::Duration::from_secs(timeout));
+                  }
+                }
               } else {
                 warn!("{}: {}", error.code, error.message);
                 return r

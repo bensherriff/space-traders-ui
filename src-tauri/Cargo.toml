@@ -28,7 +28,7 @@ strum = "0.25.0"
 strum_macros = "0.25.0"
 chrono = "0.4.26"
 dotenv = "0.15.0"
-state = "0.6.0"
+state = { version = "0.6.0", features = ["tls"] }
 
 [dependencies.tauri-plugin-sql]
 git = "https://github.com/tauri-apps/plugins-workspace"

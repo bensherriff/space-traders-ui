@@ -1,17 +1,18 @@
 import { Outlet } from "react-router-dom";
-import { useRecoilState} from "recoil";
+import { useRecoilValue} from "recoil";
 import "./Root.css";
 import Login from "./components/Login";
 import { Storage, State } from "./js";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import { IAgent } from "./js/storage";
 
 export default function Root() {
-  const [agent, setAgent] = useRecoilState(State.agentState);
+  const agent: IAgent | null = useRecoilValue(State.agentState);
 
   return (
     <>
-      {!agent || !agent.symbol? (
+      {!agent? (
         <Login />
       ):
         <div className="min-h-screen flex flex-col">

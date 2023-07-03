@@ -2,9 +2,9 @@ use log::warn;
 use tauri::State;
 use tauri_plugin_store::StoreBuilder;
 
-use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, DataState, data::get_store_path};
+use crate::{models::{system::{System, JumpGate}, waypoint::Waypoint, market::Market, shipyard::Shipyard}, DataState, data::get_store_path, CACHE};
 
-use super::requests::{ResponseObject};
+use super::requests::{ResponseObject, ErrorObject};
 
 /// Return a list of all systems.
 #[tauri::command]
@@ -16,10 +16,13 @@ pub async fn list_systems(state: State<'_, DataState>, token: String, limit: u64
     ("page", _page)
   ];
   let result = state.request.get_request::<Vec<System>>(token, "/systems".to_string(), Some(query)).await;
+  let mut cache = CACHE.get().write().unwrap();
+
   match &result.data {
     Some(data) => {
       for system in data {
         crate::data::system::insert_system(&state.pool, system);
+        *cache.systems.entry(system.symbol.to_owned()).or_insert(system.to_owned()) = system.to_owned();
       }
     }
     None => {}
@@ -183,6 +186,37 @@ pub async fn get_waypoint(state: State<'_, DataState>, token: String, system: St
       };
       Ok(result)
     }
+  }
+}
+
+#[tauri::command]
+pub async fn get_waypoints(state: State<'_, DataState>, token: String, system: String) -> Result<ResponseObject<Vec<Waypoint>>, ()> {
+  match get_system(state.to_owned(), token.to_owned(), system.to_owned()).await {
+    Ok(s) => {
+      match &s.data {
+        Some(_system) => {
+          let mut waypoints: Vec<Waypoint> = vec![];
+          for waypoint in _system.waypoints.iter() {
+            match get_waypoint(state.to_owned(), token.to_owned(), system.to_owned(), waypoint.symbol.to_owned()).await {
+              Ok(w) => {
+                match &w.data {
+                  Some(waypoint) => {
+                    waypoints.push(waypoint.to_owned());
+                  }
+                  None => {}
+                }
+              }
+              Err(err) => {
+                warn!("Error getting waypoint: {:?}", err);
+              }
+            }
+          }
+          return Ok(ResponseObject { data: Some(waypoints), error: None, meta: None })
+        }
+        None => return Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Error getting system".to_string() }), meta: None })
+      }
+    }
+    Err(_err) => return Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 0, message: "Error getting system".to_string() }), meta: None })
   }
 }
 

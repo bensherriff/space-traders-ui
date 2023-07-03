@@ -72,15 +72,15 @@ impl FromStr for SystemType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
           "Neutron Star" => Ok(SystemType::NeutronStar),
-          "Red Star" => Ok(SystemType::NeutronStar),
-          "Orange Star" => Ok(SystemType::NeutronStar),
-          "Blue Star" => Ok(SystemType::NeutronStar),
-          "Young Star" => Ok(SystemType::NeutronStar),
-          "White Dwarf" => Ok(SystemType::NeutronStar),
-          "Black Hole" => Ok(SystemType::NeutronStar),
-          "Hyper Giant" => Ok(SystemType::NeutronStar),
-          "Nebula" => Ok(SystemType::NeutronStar),
-          "Unstable" => Ok(SystemType::NeutronStar),
+          "Red Star" => Ok(SystemType::RedStar),
+          "Orange Star" => Ok(SystemType::OrangeStar),
+          "Blue Star" => Ok(SystemType::BlueStar),
+          "Young Star" => Ok(SystemType::YoungStar),
+          "White Dwarf" => Ok(SystemType::WhiteDwarf),
+          "Black Hole" => Ok(SystemType::BlackHole),
+          "Hyper Giant" => Ok(SystemType::HyperGiant),
+          "Nebula" => Ok(SystemType::Nebula),
+          "Unstable" => Ok(SystemType::Unstable),
           _ => Err(())
         }
     }

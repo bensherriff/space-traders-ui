@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-use super::{ship::cooldown::Cooldown, size::Size};
+use super::{ship::cooldown::Cooldown, size::Size, SymbolResponse};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Survey {
   pub signature: String,
   pub symbol: String,
-  pub deposits: Vec<String>,
+  pub deposits: Vec<SymbolResponse>,
   pub expiration: String,
-  size: Size
+  pub size: Size
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

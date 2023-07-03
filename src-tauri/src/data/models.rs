@@ -393,3 +393,31 @@ pub struct NewJumpGateDB<'a> {
   pub connected_y: i32,
   pub connected_distance: i32,
 }
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::data::schema::surveys)]
+pub struct SurveyDB {
+  pub survey_signature: String,
+  pub waypoint_symbol: String,
+  pub deposits: String,
+  pub expiration: String,
+  pub size: String,
+  pub cooldown_ship_symbol: String,
+  pub cooldown_total_seconds: i32,
+  pub cooldown_remaining_seconds: i32,
+  pub cooldown_expiration: Option<String>,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::data::schema::surveys)]
+pub struct NewSurveyDB<'a> {
+  pub survey_signature: &'a str,
+  pub waypoint_symbol: &'a str,
+  pub deposits: &'a str,
+  pub expiration: &'a str,
+  pub size: &'a str,
+  pub cooldown_ship_symbol: &'a str,
+  pub cooldown_total_seconds: i32,
+  pub cooldown_remaining_seconds: i32,
+  pub cooldown_expiration: Option<&'a str>,
+}

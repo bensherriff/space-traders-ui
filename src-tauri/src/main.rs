@@ -1,8 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::sync::Mutex;
+use std::{sync::RwLock, collections::HashMap};
+
 use dotenv::dotenv;
+use state::InitCell;
 
 use api::requests::Request;
 use diesel::{r2d2::{Pool, ConnectionManager}, SqliteConnection};
@@ -23,12 +25,12 @@ pub struct DataState {
   request: Request
 }
 
-#[derive(Default)]
-pub struct Systems {
-  pub systems: Vec<System>
-}
+pub static CACHE: InitCell<RwLock<Cache>> = InitCell::new();
 
-pub struct SystemsState(Mutex<Systems>);
+pub struct Cache {
+  pub systems: HashMap<String, System>,
+  pub system_graph: petgraph::Graph<String, i32>
+}
 
 fn main() {
   dotenv().ok();
@@ -37,6 +39,9 @@ fn main() {
     Ok(val) => val == "true",
     Err(_) => false
   };
+  if debug {
+    println!("Debug mode enabled");
+  }
 
   let state = DataState {
     pool: connection_pool(),
@@ -46,6 +51,12 @@ fn main() {
       max_attemps: 5
     }
   };
+
+  let cache = Cache {
+    systems: HashMap::new(),
+    system_graph: petgraph::Graph::<String, i32>::new()
+  };
+  CACHE.set(RwLock::new(cache));
 
   match tauri::Builder::default()
     .plugin(tauri_plugin_log::Builder::default()
@@ -59,7 +70,6 @@ fn main() {
     .plugin(tauri_plugin_store::Builder::default().build())
     .plugin(tauri_plugin_sql::Builder::default().build())
     .manage(state)
-    .manage(SystemsState(Default::default()))
     .setup(|app| {
       data::init(&connection_pool(), app);
       Ok(())
@@ -109,9 +119,11 @@ fn main() {
       api::systems::get_system,
       api::systems::list_waypoints,
       api::systems::get_waypoint,
+      api::systems::get_waypoints,
       api::systems::get_market,
       api::systems::get_shipyard,
-      api::systems::get_jump_gate
+      api::systems::get_jump_gate,
+      app::auto_extract_resources,
       ])
     .run(tauri::generate_context!()) {
       Ok(_) => info!("App started"),

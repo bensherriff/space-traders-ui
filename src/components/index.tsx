@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
+import { IError } from "../js/interfaces"
 
-export function Error({error}) {
+export function Error(error: IError) {
   if (error && error.code && error.message) {
     if (error.code == 409) {
       return (<></>)
@@ -16,13 +17,13 @@ export function Error({error}) {
   }
 }
 
-export function ErrorText({children}) {
+export function ErrorText({children}: {children: string}) {
   return (
     <span className='ml-1 text-red-600'>{children}</span>
   )
 }
 
-export function Button({type="button", onClick=() => {}, children=(<></>), disabled=false}) {
+export function Button({type="button", onClick=() => {}, children=(<></>), disabled=false}: {type?: "button" | "submit" | "reset", onClick?: () => void, children?: any, disabled?: boolean}) {
   if (disabled) {
     return (
       <button
@@ -51,12 +52,13 @@ export function CountdownTimer({duration = 0}) {
   const [counter, setCounter] = useState(Math.ceil(duration));
 
   useEffect(() => {
-    const timer =
-      counter > 0 && setInterval(() => setCounter(counter - 1), 1000);
-    return () => clearInterval(timer);
+    if (counter > 0) {
+      setInterval(() => setCounter(counter - 1), 1000);
+    }
+    return () => clearInterval(counter);
   }, [counter]);
 
-  function toTime(totalSeconds) {
+  function toTime(totalSeconds: number) {
     const totalMinutes = Math.floor(totalSeconds / 60);
     const seconds = (totalSeconds % 60).toLocaleString('en-US', {
       minimumIntegerDigits: 2,

@@ -1,7 +1,8 @@
 use std::str::FromStr;
 
-use crate::data::models::{CargoDB, ModuleDB, MountDB, NewCargoDB, NewModuleDB, NewMountDB};
-use crate::models::ship::*;
+use crate::data::models::{CargoDB, ModuleDB, MountDB, NewCargoDB, NewModuleDB, NewMountDB, SurveyDB, NewSurveyDB};
+use crate::models::ship::cooldown::Cooldown;
+use crate::models::{ship::*, SymbolResponse};
 use crate::data::{models::{ShipDB, NewShipDB}, schema};
 use crate::models::ship::cargo::{Cargo, CargoItem};
 use crate::models::ship::crew::Rotation;
@@ -14,11 +15,14 @@ use crate::models::ship::navigation::{Navigation, Route, RouteWaypoint, NavStatu
 use crate::models::ship::reactor::Reactor;
 use crate::models::ship::registration::{Registration, Role};
 use crate::models::ship::requirements::Requirements;
+use crate::models::size::Size;
+use crate::models::survey::{Survey, SurveyResponse};
 use crate::models::waypoint::WaypointType;
 
+use chrono::{DateTime, Local};
 use diesel::{prelude::*, insert_into, replace_into, delete, update};
 use diesel::{RunQueryDsl, QueryDsl, SqliteConnection, r2d2::{Pool, ConnectionManager}};
-use log::warn;
+use log::{error, debug};
 
 pub fn get_ship(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symbol: &str) -> Option<Ship> {
   use schema::fleet;
@@ -68,8 +72,8 @@ pub fn get_ships_at_waypoint(pool: &Pool<ConnectionManager<SqliteConnection>>, w
       let mut ships: Vec<Ship> = vec![];
       for (_index, ship_db) in r.iter().enumerate() {
         let ship = build_ship_from_db(pool, ship_db);
-        // if matches!(ship.nav.status, NavStatus::Docked | NavStatus::InOrbit) {
-        if matches!(ship.nav.status, NavStatus::Docked) {
+        if matches!(ship.nav.status, NavStatus::Docked | NavStatus::InOrbit) {
+        // if matches!(ship.nav.status, NavStatus::Docked) {
           ships.push(ship);
         }
       }
@@ -235,23 +239,21 @@ pub fn insert_ship(pool: &Pool<ConnectionManager<SqliteConnection>>, ship: &Ship
         insert_modules(pool, &ship.symbol, &ship.modules);
         insert_mounts(pool, &ship.symbol, &ship.mounts);
       }
-      Err(err) => {
-        warn!("{}", err);
-      }
+      Err(err) => error!("Error inserting ship: {}", err)
     };
 }
 
 pub fn update_ship_cargo(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symbol: &str, cargo: &Cargo) {
   use schema::fleet_cargo;
+  use schema::fleet;
 
   let mut connection = pool.get().unwrap();
-  let result = delete(fleet_cargo::table)
+  match delete(fleet_cargo::table)
     .filter(fleet_cargo::ship_symbol.eq(ship_symbol))
-    .execute(&mut connection);
-  match result {
-    Ok(_) => {},
-    Err(_err) => {}
-  };
+    .execute(&mut connection) {
+      Ok(_) => {},
+      Err(err) => error!("Error deleting cargo: {}", err)
+    };
   for item in cargo.inventory.iter() {
     let result = insert_into(fleet_cargo::table)
     .values(NewCargoDB {
@@ -264,9 +266,17 @@ pub fn update_ship_cargo(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_
     .execute(&mut connection);
     match result {
       Ok(_) => {},
-      Err(_err) => {}
+      Err(err) => error!("Error inserting cargo: {}", err)
     };
   }
+  let result = update(fleet::table)
+    .filter(fleet::ship_symbol.eq(ship_symbol))
+    .set(fleet::cargo_units.eq(cargo.units))
+    .execute(&mut connection);
+  match result {
+    Ok(_) => {},
+    Err(err) => error!("Error updating cargo units: {}", err)
+  };
 }
 
 pub fn update_ship_navigation(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symbol: &str, navigation: &Navigation) {
@@ -487,4 +497,115 @@ pub fn insert_mounts(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_symb
       .execute(&mut connection)
       .expect("Error saving ship mounts");
   }
+}
+
+pub fn get_surveys(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoint_symbol: &str) -> Option<SurveyResponse> {
+  use schema::surveys;
+
+  let mut connection = pool.get().unwrap();
+  let result: Result<Vec<SurveyDB>, diesel::result::Error> = surveys::table
+    .filter(surveys::waypoint_symbol.eq(waypoint_symbol))
+    .select(SurveyDB::as_select())
+    .load(&mut connection);
+
+  match result {
+    Ok(r) => {
+      if r.is_empty() {
+        return None;
+      }
+      let mut surveys: Vec<Survey> = vec![];
+      let mut cooldown: Cooldown = Cooldown {
+        ship_symbol: "".to_string(),
+        total_seconds: 0,
+        remaining_seconds: 0,
+        expiration: Some("".to_string()),
+      };
+      for (_index, survey) in r.iter().enumerate() {
+        let survey_expiration = DateTime::parse_from_rfc3339(&survey.expiration).unwrap().timestamp();
+        // If the survey is expired, delete it
+        if Local::now().timestamp() >= survey_expiration {
+          debug!("Deleting expired survey: {}", survey.survey_signature);
+          match delete(surveys::table)
+            .filter(surveys::survey_signature.eq(survey.survey_signature.to_string()))
+            .execute(&mut connection) {
+              Ok(_) => {},
+              Err(err) => error!("Error deleting expired survey: {}", err)
+            };
+          continue;
+        }
+        let mut deposits: Vec<SymbolResponse> = vec![];
+        for (_index, deposit) in survey.deposits.split(",").filter(|&x| !x.is_empty()).enumerate() {
+          deposits.push(SymbolResponse { symbol: deposit.to_string() });
+        }
+        surveys.push(Survey {
+          signature: survey.survey_signature.to_string(),
+          symbol: survey.waypoint_symbol.to_string(),
+          deposits,
+          expiration: survey.expiration.to_string(),
+          size: Size::from_str(&survey.size).unwrap(),
+        });
+        cooldown.ship_symbol = survey.cooldown_ship_symbol.to_string();
+        cooldown.total_seconds = survey.cooldown_total_seconds;
+        cooldown.remaining_seconds = survey.cooldown_remaining_seconds;
+        cooldown.expiration = survey.cooldown_expiration.to_owned();
+      }
+      if surveys.is_empty() {
+        None
+      } else {
+        Some(SurveyResponse {
+          surveys,
+          cooldown,
+        })
+      }
+    },
+    Err(_err) => None
+  }
+}
+
+pub fn insert_surveys(pool: &Pool<ConnectionManager<SqliteConnection>>, survey_response: &SurveyResponse) {
+  use schema::surveys;
+  for (_index, survey) in survey_response.surveys.iter().enumerate() {
+    let mut _deposits = "".to_string();
+    for (i, deposit) in survey.deposits.iter().enumerate() {
+      if i < survey.deposits.len() - 1 {
+        _deposits = format!("{}{},", _deposits, deposit.symbol.to_string());
+      } else {
+        _deposits = format!("{}{}", _deposits, deposit.symbol.to_string());
+      }
+    }
+    let mut connection = pool.get().unwrap();
+    let survey = NewSurveyDB {
+      survey_signature: &survey.signature,
+      waypoint_symbol: &survey.symbol,
+      expiration: &survey.expiration,
+      size: &survey.size.to_string(),
+      deposits: &_deposits,
+      cooldown_ship_symbol: &survey_response.cooldown.ship_symbol.to_string(),
+      cooldown_total_seconds: survey_response.cooldown.total_seconds,
+      cooldown_remaining_seconds: survey_response.cooldown.remaining_seconds,
+      cooldown_expiration: match &survey_response.cooldown.expiration {
+        Some(e) => Some(e),
+        None => None
+      },
+    };
+    insert_into(surveys::table)
+      .values(survey)
+      .execute(&mut connection)
+      .expect("Error saving ship survey");  
+  }
+}
+
+pub fn update_survey(pool: &Pool<ConnectionManager<SqliteConnection>>, survey_signature: &str, cooldown: &Cooldown) {
+  use schema::surveys;
+  let mut connection = pool.get().unwrap();
+  update(surveys::table)
+    .filter(surveys::survey_signature.eq(survey_signature))
+    .set((
+      surveys::cooldown_ship_symbol.eq(cooldown.ship_symbol.to_string()),
+      surveys::cooldown_total_seconds.eq(cooldown.total_seconds),
+      surveys::cooldown_remaining_seconds.eq(cooldown.remaining_seconds),
+      surveys::cooldown_expiration.eq(cooldown.expiration.to_owned()),
+    ))
+    .execute(&mut connection)
+    .expect("Error updating survey cooldown");
 }

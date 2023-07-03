@@ -19,7 +19,7 @@ export default function Waypoint() {
   const [ships, setShips] = useState({});
   const [localShips, setLocalShips] = useState([]);
   const [localQuery, setLocalQuery] = useState("");
-  const [currentShip, setCurrentShip] = useState(null);
+  const [localShip, setLocalShip] = useState(null);
   const [otherShips, setOtherShips] = useState([]);
   const [otherQuery, setOtherQuery] = useState("");
   const [otherShip, setOtherShip] = useState(null);
@@ -55,7 +55,7 @@ export default function Waypoint() {
           if (res && res.data) {
             setLocalShips(res.data);
             if (res.data.length > 0) {
-              setCurrentShip(res.data[0]);
+              setLocalShip(res.data[0]);
               // Other ships
               let _otherShips = Object.values(_ships).filter(object1 => {
                 return !res.data.some(object2 => {
@@ -68,7 +68,7 @@ export default function Waypoint() {
               }
             } else {
               setLocalShips([]);
-              setCurrentShip(null);
+              setLocalShip(null);
               setOtherShips(response.data);
               if (response.data.length > 0) {
                 setOtherShip(response.data[0]);
@@ -105,19 +105,23 @@ export default function Waypoint() {
   }
 
   async function orbit_ship() {
-    invoke("orbit_ship", { token: Storage.getToken(), symbol: currentShip.symbol}).then(response => {
+    invoke("orbit_ship", { token: Storage.getToken(), symbol: localShip.symbol}).then(response => {
       if (response && response.data) {
-        setCurrentShip(null);
+        setLocalShip(null);
         get_ships();
+      } else if (response && response.error) {
+        console.error(response.error);
       }
     });
   }
   
   async function dock_ship() {
-    invoke("dock_ship", { token: Storage.getToken(), symbol: otherShip.symbol}).then(response => {
+    invoke("dock_ship", { token: Storage.getToken(), symbol: localShip.symbol}).then(response => {
       if (response && response.data) {
         setOtherShip(null);
         get_ships();
+      } else if (response && response.error) {
+        console.error(response.error);
       }
     });
   }
@@ -129,6 +133,12 @@ export default function Waypoint() {
       waypoint: waypointId,
       system: systemId
     }).then(response => {
+      console.log(response);
+    });
+  }
+
+  async function extract_resources() {
+    invoke("auto_extract_resources", { token: Storage.getToken(), symbol: localShip.symbol, waypoint: waypointId, createSurvey: true }).then(response => {
       console.log(response);
     });
   }
@@ -177,32 +187,37 @@ export default function Waypoint() {
                 <JumpGate systemId={systemId} waypointId={waypointId}/>
               ): <></>}
               {marketToggle? (
-                <Marketplace systemId={systemId} waypointId={waypointId} ship={currentShip}/>
+                <Marketplace systemId={systemId} waypointId={waypointId} ship={localShip}/>
               ): <></>}
               {shipyardToggle? (
                 <Shipyard systemId={systemId} waypointId={waypointId}/>
               ): <></>}
             </div>
             <div className='w-full h-full ml-1'>
-              {currentShip? (
+              {localShip? (
                 <>
                   <h1 className='text-center text-2xl'>Current Ship</h1>
-                  <SymbolAutoComplete items={localShips} selectedItem={currentShip} setSelectedShip={setCurrentShip} />
-                  <NavLink to={`/fleet/${currentShip.symbol}`}>Ship Info</NavLink>
-                  <Button onClick={orbit_ship}>Orbit</Button>
+                  <SymbolAutoComplete items={localShips} selectedItem={localShip} setSelectedShip={setLocalShip} />
+                  <NavLink to={`/fleet/${localShip.symbol}`}>Ship Info</NavLink>
+                  {localShip.nav.status === "DOCKED" ? (
+                    <Button onClick={orbit_ship}>Orbit</Button>
+                  ): localShip.nav.status === "IN_ORBIT"? (
+                    <>
+                      <Button onClick={dock_ship}>Dock</Button>
+                      {waypoint.traits.some(trait => trait.symbol.includes('DEPOSITS'))? (
+                        <Button onClick={extract_resources}>Extract Resources</Button>
+                      ): <></>}
+                    </>
+                  ): <></>}
                 </>
               ): <></>}
-              {currentShip && otherShip? ( <hr className='my-4'/> ): <></>}
+              {localShip && otherShip? ( <hr className='my-4'/> ): <></>}
               {otherShip? (
                 <>
                   <h1 className='text-center text-2xl'>Remote Ships</h1>
                   <SymbolAutoComplete items={otherShips} selectedItem={otherShip} setSelectedShip={setOtherShip}/>
                   <NavLink to={`/fleet/${otherShip.symbol}`}>Ship Info</NavLink>
-                  {otherShip.nav.route.destination.symbol == waypointId? (<>
-                    <Button onClick={dock_ship}>Dock</Button>
-                  </>): <>
-                    <Button onClick={navigate}>Navigate Here</Button>
-                  </>}
+                  <Button onClick={navigate}>Navigate Here</Button>
                 </>
               ): <></>}
             </div>
@@ -358,7 +373,6 @@ function MarketAction({good, ship}) {
   }, [amount, marketAction]);
 
   async function handleAction() {
-    console.log(marketAction, amount);
     if (marketAction == 'buy') {
       invoke("purchase_cargo", { token: Storage.getToken(), symbol: ship.symbol, itemSymbol: good.symbol, units: amount}).then((response) => {
         if (response && response.data) {
@@ -377,8 +391,19 @@ function MarketAction({good, ship}) {
           setErrorMessage(response.error.message);
         }
       });
-    } else if (marketAction == 'sellAll') {
-      
+    } else if (marketAction == 'sell_all') {
+      let item = ship.cargo.inventory.find((item) => item.symbol == good.symbol);
+      let itemAmount = item? item.units: 0;
+      if (itemAmount > 0) {
+        invoke("sell_cargo", { token: Storage.getToken(), symbol: ship.symbol, itemSymbol: good.symbol, units: itemAmount}).then((response) => {
+          if (response && response.data) {
+            setAgent(response.data.agent);
+          } else if (response && response.error) {
+            console.error(response.error.message);
+            setErrorMessage(response.error.message);
+          }
+        });
+      }
     }
   }
 
@@ -402,16 +427,12 @@ function MarketAction({good, ship}) {
                 }}
                 className=''
               >
-                <select value={marketAction} onChange={(e) => setMarketAction(e.target.value)} className='mx-1 mt-0.5 p-1 py-2 rounded text-white bg-gray-700'>
-                  <option value={'buy'}>Buy</option>
-                  <option value={'sell'}>Sell</option>
-                  {/* <option value={'sellAll'}>Sell All</option> */}
-                </select>
+                <Button onClick={() => setMarketAction(marketAction === "buy"? "sell" : marketAction === "sell"? "sell_all" : "buy")}>{Text.capitalize(marketAction)}</Button>
                 <input
                   type='number'
                   min={0}
                   value={amount}
-                  hidden={marketAction == "sellAll"}
+                  hidden={marketAction == "sell_all"}
                   onChange={(e) => {
                     setAmount(Math.abs(e.currentTarget.value))
                   }} placeholder={good.tradeVolume}
