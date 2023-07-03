@@ -5,7 +5,7 @@ import Login from "./components/Login";
 import { Storage, State } from "./js";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import { IAgent } from "./js/storage";
+import { IAgent } from "./js/interfaces";
 
 export default function Root() {
   const agent: IAgent | null = useRecoilValue(State.agentState);
