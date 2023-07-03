@@ -88,3 +88,8 @@ pub async fn get_path_to_system(state: State<'_, DataState>, app_handle: tauri::
     None => return Ok(ResponseObject { data: None, error: Some(ErrorObject { code: 9000, message: "No path found".to_string() }), meta: None })
   }
 }
+
+#[tauri::command]
+pub async fn auto_extract_resources(state: State<'_, DataState>, app_handle: tauri::AppHandle, token: String, system_symbol: String) -> Result<(), ()> {
+  return Ok(())
+}

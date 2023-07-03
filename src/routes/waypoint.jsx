@@ -133,6 +133,12 @@ export default function Waypoint() {
     });
   }
 
+  async function extract_resources() {
+    invoke("auto_extract_resources", { token: Storage.getToken(), symbol: localShip.symbol, createSurvey: true }).then(response => {
+      console.log(response);
+    });
+  }
+
   return (
     <div>
       {waypoint? (
@@ -190,6 +196,9 @@ export default function Waypoint() {
                   <SymbolAutoComplete items={localShips} selectedItem={localShip} setSelectedShip={setLocalShip} />
                   <NavLink to={`/fleet/${localShip.symbol}`}>Ship Info</NavLink>
                   <Button onClick={orbit_ship}>Orbit</Button>
+                  {waypoint.traits.some(trait => trait.symbol.includes('DEPOSITS'))? (
+                    <Button onClick={extract_resources}>Extract Resources</Button>
+                  ): <></>}
                 </>
               ): <></>}
               {localShip && otherShip? ( <hr className='my-4'/> ): <></>}

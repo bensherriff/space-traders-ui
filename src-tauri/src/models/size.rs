@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, str::FromStr};
 
 use serde::{Serialize, Deserialize};
 
@@ -19,5 +19,18 @@ impl Display for Size {
       Size::Medium => write!(f, "Medium"),
       Size::Large => write!(f, "Large"),
     }
+  }
+}
+
+impl FromStr for Size {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+      match s {
+        "Large" => Ok(Size::Large),
+        "Medium" => Ok(Size::Medium),
+        "Small" => Ok(Size::Small),
+        _ => Err(())
+      }
   }
 }

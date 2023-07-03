@@ -119,7 +119,8 @@ fn main() {
       api::systems::get_waypoints,
       api::systems::get_market,
       api::systems::get_shipyard,
-      api::systems::get_jump_gate
+      api::systems::get_jump_gate,
+      app::auto_extract_resources,
       ])
     .run(tauri::generate_context!()) {
       Ok(_) => info!("App started"),

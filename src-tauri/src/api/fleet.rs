@@ -124,9 +124,20 @@ pub async fn dock_ship(state: State<'_, DataState>, token: String, symbol: Strin
 /// Multiple ships can use the same survey for extraction.
 #[tauri::command]
 pub async fn create_survey(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<SurveyResponse>, ()> {
-  let url = format!("/my/ships/{}/survey", symbol);
-  let result = state.request.post_request::<SurveyResponse>(token, url, None).await;
-  Ok(result)
+  match crate::data::fleet::get_surveys(&state.pool, &symbol) {
+    Some(s) => {
+      Ok(ResponseObject { data: Some(s), error: None, meta: None })
+    }
+    None => {
+      let url = format!("/my/ships/{}/survey", symbol);
+      let result = state.request.post_request::<SurveyResponse>(token, url, None).await;
+      match &result.data {
+        Some(data) => crate::data::fleet::insert_surveys(&state.pool, &data),
+        None => {}
+      };
+      Ok(result)
+    }
+  }
 }
 
 /// Extract resources from the waypoint into your ship. Send an optional survey as the payload to target specific yields.

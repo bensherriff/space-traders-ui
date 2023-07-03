@@ -199,6 +199,20 @@ diesel::table! {
   }
 }
 
+diesel::table! {
+  surveys (signature) {
+    signature -> Text,
+    waypoint_symbol -> Text,
+    deposits -> Text,
+    expiration -> Text,
+    size -> Text,
+    cooldown_ship_symbol -> Text,
+    cooldown_total_seconds -> Integer,
+    cooldown_remaining_seconds -> Integer,
+    cooldown_expiration -> Text,
+  }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
   fleet,
   fleet_modules,
@@ -212,4 +226,5 @@ diesel::allow_tables_to_appear_in_same_query!(
   market_trade_goods,
   markets,
   jump_gates,
+  surveys,
 );
