@@ -7,6 +7,7 @@ import { useRecoilState} from "recoil";
 import Input from "./Form/Input";
 import { Button } from ".";
 import Select from "./Form/Select";
+import { IResponse, IStatus } from "../js/interfaces";
 
 export default function Login() {
   const [agent, setAgent] = useRecoilState(State.agentState);
@@ -14,13 +15,13 @@ export default function Login() {
   const [tokenError, setTokenError] = useState("");
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState("");
-  const [factions, setFactions] = useState([]);
+  const [factions, setFactions] = useState<any[]>([]);
   const [faction, setFaction] = useState("");
   const [factionError, setFactionError] = useState("");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [registerError, setRegisterError] = useState("");
-  const [status, setStatus] = useState({});
+  const [status, setStatus] = useState<IStatus | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,48 +38,44 @@ export default function Login() {
   }
 
   async function register() {
-    invoke("register", {faction: faction, symbol: name, email: email }).then(response => {
-      if (response && response.data) {
-        console.log(response);
-        setToken(response.data.token);
-        Storage.setToken(response.data.token);
-        setAgent(response.data.agent);
-        navigate("/fleet");
-      } else if (response && response.error) {
-        setRegisterError(response.error.message);
-      }
-    });
+    const response: IResponse = await invoke("register", {faction: faction, symbol: name, email: email });
+    if (response && response.data) {
+      console.log(response);
+      setToken(response.data.token);
+      Storage.setToken(response.data.token);
+      setAgent(response.data.agent);
+      navigate("/fleet");
+    } else if (response && response.error) {
+      setRegisterError(response.error.message);
+    }
   }
 
   async function get_my_agent() {
-    invoke("get_my_agent", { token: token }).then(response => {
-      if (response && response.data) {
-        setTokenError("");
-        setToken(token);
-        Storage.setToken(token);
-        setAgent(response.data);
-        navigate("/fleet");
-      } else if (response && response.error) {
-        setTokenError(response.error.message);
-      }
-    });
+    const response: IResponse = await invoke("get_my_agent", { token: token });
+    if (response && response.data) {
+      setTokenError("");
+      setToken(token);
+      Storage.setToken(token);
+      setAgent(response.data);
+      navigate("/fleet");
+    } else if (response && response.error) {
+      setTokenError(response.error.message);
+    }
   }
 
   async function list_faction_strings() {
-    invoke("list_faction_strings").then(response => {
-      if (response && response.data) {
-        setFactions(response.data);
-        setFaction(response.data[0]);
-      }
-    });
+    const response: IResponse = await invoke("list_faction_strings");
+    if (response && response.data) {
+      setFactions(response.data);
+      setFaction(response.data[0]);
+    }
   }
 
   async function get_status() {
-    invoke("get_status").then(response => {
-      if (response && response.data) {
-        setStatus(response.data);
-      }
-    });
+    const response: IResponse = await invoke("get_status");
+    if (response && response.data) {
+      setStatus(response.data);
+    }
   }
 
   return (
@@ -105,7 +102,7 @@ export default function Login() {
               placeholder="Enter your token..."
               errorMsg={tokenError}
               value={token}
-              onChange={(e) => {
+              onChange={(e: any) => {
                 setTokenError("");
                 setToken(e.currentTarget.value);
               }}
@@ -125,7 +122,7 @@ export default function Login() {
               placeholder="Between 3-14 characters"
               errorMsg={nameError}
               value={name}
-              onChange={(e) => {
+              onChange={(e: any) => {
                 setNameError("");
                 setName(e.currentTarget.value);
               }}
@@ -143,7 +140,7 @@ export default function Login() {
               placeholder="For reserved names"
               errorMsg={emailError}
               value={email}
-              onChange={(e) => {
+              onChange={(e: any) => {
                 setEmailError("");
                 setEmail(e.currentTarget.value);
               }}
@@ -190,7 +187,7 @@ export default function Login() {
   );
 }
 
-function LoginLogo({ link, src, alt }) {
+function LoginLogo({ link, src, alt }: { link: string, src: string, alt: string }) {
   return (
     <a href={link} target="_blank">
       <img src={src} className="logo scale-150 mx-6" alt={alt}/>

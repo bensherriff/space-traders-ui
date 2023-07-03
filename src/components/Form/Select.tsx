@@ -2,11 +2,11 @@ import { Fragment } from 'react'
 import { Listbox, Transition } from '@headlessui/react'
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 
-function classNames(...classes) {
+function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
 
-export default function Select({ label = "", list = [], selected = null, setSelected = () => {}, errorMsg = "" }) {
+export default function Select({ label, list, selected , setSelected, errorMsg }: { label?: string, list: string[], selected: string | null, setSelected: (value: string) => void, errorMsg?: string }) {
   return (
     <>
       <Listbox value={selected} onChange={setSelected}>

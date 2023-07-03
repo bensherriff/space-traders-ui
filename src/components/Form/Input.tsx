@@ -1,7 +1,7 @@
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { v4 as uuidv4 } from 'uuid';
 
-export default function Input({ label="", type="text", placeholder="", errorMsg="", value="", onChange=(e) => { e.preventDefault()} }) {
+export default function Input({ label, type="text", placeholder, errorMsg, value, onChange=(e: any) => { e.preventDefault()} } : { label?: string, type?: string, placeholder?: string, errorMsg?: string, value?: string, onChange?: any }) {
   const id = uuidv4();
   return (
     <>

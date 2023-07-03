@@ -1,30 +1,20 @@
 # Space Traders UI
+A GUI and automation tool for [Space Traders](https://spacetraders.io/)
+  - Built on the v2 API
+  - [Rust](https://www.rust-lang.org/)
+  - [Tauri](https://tauri.app)
 
-
-## Development
-Prerequisites
-- [Rust](https://www.rust-lang.org/)
-  - Cargo
-  - Rustup
-- [Tauri](https://tauri.app)
-- [npm](https://github.com/nvm-sh/nvm)
-
-The application can be started for development using the following:
+## Contributing
+For development and debugging, the application can be started using the following:
 ```curl
 npm install
 npm run tauri dev
 ```
 
-### Database Setup
-Requires [diesel_cli](https://crates.io/crates/diesel_cli)
+### Database Interaction
+The app uses a SQLITE database located in the local app data directory. Tables can be manipulated using [diesel_cli](https://crates.io/crates/diesel_cli), PSQL, or a tool like [SQLite Browser](https://sqlitebrowser.org/)
 
 `cargo install diesel_cli --no-default-features --features "sqlite-bundled"` or `cargo install diesel_cli --no-default-features --features "sqlite"`
-
-- Setup .env with the DATABASE_URL
-```curl
-echo DATABASE_URL=sqlite://data/stu.db > .env
-source .env
-```
 
 - Setup and run migrations (from `src-tauri` directory)
 ```curl
@@ -35,5 +25,9 @@ diesel migration run
 
 Handy: `diesel migration redo` and `diesel database reset`
 
-### Building
-`npm run tauri build` or `npm run tauri build -- --debug`
+## Building
+`npm run tauri build`
+The installation executable is located under `src-tauri/target/release/bundle/nsis/`
+
+A debug build can be built with the following:
+`npm run tauri build -- --debug`
