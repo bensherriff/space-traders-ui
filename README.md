@@ -12,7 +12,7 @@ npm run tauri dev
 ```
 
 ### Database Interaction
-The database is a SQLITE file located in the local app data directory. Tables can be manipulated using [diesel_cli](https://crates.io/crates/diesel_cli), PSQL, or a tool like [SQLite Browser](https://sqlitebrowser.org/)
+The app uses a SQLITE database located in the local app data directory. Tables can be manipulated using [diesel_cli](https://crates.io/crates/diesel_cli), PSQL, or a tool like [SQLite Browser](https://sqlitebrowser.org/)
 
 `cargo install diesel_cli --no-default-features --features "sqlite-bundled"` or `cargo install diesel_cli --no-default-features --features "sqlite"`
 

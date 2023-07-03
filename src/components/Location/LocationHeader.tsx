@@ -1,8 +1,8 @@
-import Tag from '../../components/Tag';
+import Tag from '../Tag';
 import { Text } from '../../js';
 import { NavLink } from "react-router-dom";
 
-export function SystemHeader({ symbol, type }) {
+export function SystemHeader({ symbol, type }: { symbol: string, type: string }) {
   let colors = Text.systemTypeColor(type);
   return (
     <span className='flex m-1 text-left'>
@@ -12,7 +12,7 @@ export function SystemHeader({ symbol, type }) {
   )
 }
 
-export function WaypointHeader({ waypoint }) {
+export function WaypointHeader({ waypoint }: { waypoint: any }) {
   let colors = Text.waypointTypeColor(waypoint.type);
   return (
     <span className='flex m-1 text-left'>
