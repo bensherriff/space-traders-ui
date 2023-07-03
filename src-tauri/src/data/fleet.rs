@@ -19,6 +19,7 @@ use crate::models::size::Size;
 use crate::models::survey::{Survey, SurveyResponse};
 use crate::models::waypoint::WaypointType;
 
+use chrono::{DateTime, Local};
 use diesel::{prelude::*, insert_into, replace_into, delete, update};
 use diesel::{RunQueryDsl, QueryDsl, SqliteConnection, r2d2::{Pool, ConnectionManager}};
 use log::warn;
@@ -71,8 +72,8 @@ pub fn get_ships_at_waypoint(pool: &Pool<ConnectionManager<SqliteConnection>>, w
       let mut ships: Vec<Ship> = vec![];
       for (_index, ship_db) in r.iter().enumerate() {
         let ship = build_ship_from_db(pool, ship_db);
-        // if matches!(ship.nav.status, NavStatus::Docked | NavStatus::InOrbit) {
-        if matches!(ship.nav.status, NavStatus::Docked) {
+        if matches!(ship.nav.status, NavStatus::Docked | NavStatus::InOrbit) {
+        // if matches!(ship.nav.status, NavStatus::Docked) {
           ships.push(ship);
         }
       }
@@ -248,13 +249,9 @@ pub fn update_ship_cargo(pool: &Pool<ConnectionManager<SqliteConnection>>, ship_
   use schema::fleet_cargo;
 
   let mut connection = pool.get().unwrap();
-  let result = delete(fleet_cargo::table)
+  delete(fleet_cargo::table)
     .filter(fleet_cargo::ship_symbol.eq(ship_symbol))
     .execute(&mut connection);
-  match result {
-    Ok(_) => {},
-    Err(_err) => {}
-  };
   for item in cargo.inventory.iter() {
     let result = insert_into(fleet_cargo::table)
     .values(NewCargoDB {
@@ -511,6 +508,13 @@ pub fn get_surveys(pool: &Pool<ConnectionManager<SqliteConnection>>, waypoint_sy
         expiration: Some("".to_string()),
       };
       for (_index, survey) in r.iter().enumerate() {
+        let survey_expiration = DateTime::parse_from_rfc3339(&survey.expiration).unwrap().timestamp();
+        if Local::now().timestamp() >= survey_expiration {
+          delete(surveys::table)
+            .filter(surveys::signature.eq(survey.signature.to_string()))
+            .execute(&mut connection);
+          continue;
+        }
         let mut deposits: Vec<SymbolResponse> = vec![];
         for (_index, deposit) in survey.deposits.split(",").filter(|&x| !x.is_empty()).enumerate() {
           deposits.push(SymbolResponse { symbol: deposit.to_string() });

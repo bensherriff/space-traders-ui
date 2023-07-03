@@ -36,6 +36,9 @@ export default function Waypoint() {
         setWaypointTraits(response.data.traits);
         setMarketToggle(response.data.traits.some(trait => trait.symbol === 'MARKETPLACE'));
         setJumpGateToggle(response.data.type == 'JUMP_GATE');
+
+        let t = response.data.traits.some(trait => trait.symbol.includes('DEPOSITS'))
+        console.log(t, response.data);
       } else if (response && response.error) {
         console.error(response.error);
       }
@@ -109,15 +112,19 @@ export default function Waypoint() {
       if (response && response.data) {
         setLocalShip(null);
         get_ships();
+      } else if (response && response.error) {
+        console.error(response.error);
       }
     });
   }
   
   async function dock_ship() {
-    invoke("dock_ship", { token: Storage.getToken(), symbol: otherShip.symbol}).then(response => {
+    invoke("dock_ship", { token: Storage.getToken(), symbol: localShip.symbol}).then(response => {
       if (response && response.data) {
         setOtherShip(null);
         get_ships();
+      } else if (response && response.error) {
+        console.error(response.error);
       }
     });
   }
@@ -195,9 +202,15 @@ export default function Waypoint() {
                   <h1 className='text-center text-2xl'>Current Ship</h1>
                   <SymbolAutoComplete items={localShips} selectedItem={localShip} setSelectedShip={setLocalShip} />
                   <NavLink to={`/fleet/${localShip.symbol}`}>Ship Info</NavLink>
-                  <Button onClick={orbit_ship}>Orbit</Button>
-                  {waypoint.traits.some(trait => trait.symbol.includes('DEPOSITS'))? (
-                    <Button onClick={extract_resources}>Extract Resources</Button>
+                  {localShip.nav.status === "DOCKED" ? (
+                    <Button onClick={orbit_ship}>Orbit</Button>
+                  ): localShip.nav.status === "IN_ORBIT"? (
+                    <>
+                      <Button onClick={dock_ship}>Dock</Button>
+                      {waypoint.traits.some(trait => trait.symbol.includes('DEPOSITS'))? (
+                        <Button onClick={extract_resources}>Extract Resources</Button>
+                      ): <></>}
+                    </>
                   ): <></>}
                 </>
               ): <></>}
@@ -207,11 +220,7 @@ export default function Waypoint() {
                   <h1 className='text-center text-2xl'>Remote Ships</h1>
                   <SymbolAutoComplete items={otherShips} selectedItem={otherShip} setSelectedShip={setOtherShip}/>
                   <NavLink to={`/fleet/${otherShip.symbol}`}>Ship Info</NavLink>
-                  {otherShip.nav.route.destination.symbol == waypointId? (<>
-                    <Button onClick={dock_ship}>Dock</Button>
-                  </>): <>
-                    <Button onClick={navigate}>Navigate Here</Button>
-                  </>}
+                  <Button onClick={navigate}>Navigate Here</Button>
                 </>
               ): <></>}
             </div>
