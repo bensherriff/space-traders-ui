@@ -36,9 +36,6 @@ export default function Waypoint() {
         setWaypointTraits(response.data.traits);
         setMarketToggle(response.data.traits.some(trait => trait.symbol === 'MARKETPLACE'));
         setJumpGateToggle(response.data.type == 'JUMP_GATE');
-
-        let t = response.data.traits.some(trait => trait.symbol.includes('DEPOSITS'))
-        console.log(t, response.data);
       } else if (response && response.error) {
         console.error(response.error);
       }
@@ -141,7 +138,7 @@ export default function Waypoint() {
   }
 
   async function extract_resources() {
-    invoke("auto_extract_resources", { token: Storage.getToken(), symbol: localShip.symbol, createSurvey: true }).then(response => {
+    invoke("auto_extract_resources", { token: Storage.getToken(), symbol: localShip.symbol, waypoint: waypointId, createSurvey: true }).then(response => {
       console.log(response);
     });
   }
@@ -376,7 +373,6 @@ function MarketAction({good, ship}) {
   }, [amount, marketAction]);
 
   async function handleAction() {
-    console.log(marketAction, amount);
     if (marketAction == 'buy') {
       invoke("purchase_cargo", { token: Storage.getToken(), symbol: ship.symbol, itemSymbol: good.symbol, units: amount}).then((response) => {
         if (response && response.data) {
@@ -395,8 +391,19 @@ function MarketAction({good, ship}) {
           setErrorMessage(response.error.message);
         }
       });
-    } else if (marketAction == 'sellAll') {
-      
+    } else if (marketAction == 'sell_all') {
+      let item = ship.cargo.inventory.find((item) => item.symbol == good.symbol);
+      let itemAmount = item? item.units: 0;
+      if (itemAmount > 0) {
+        invoke("sell_cargo", { token: Storage.getToken(), symbol: ship.symbol, itemSymbol: good.symbol, units: itemAmount}).then((response) => {
+          if (response && response.data) {
+            setAgent(response.data.agent);
+          } else if (response && response.error) {
+            console.error(response.error.message);
+            setErrorMessage(response.error.message);
+          }
+        });
+      }
     }
   }
 
@@ -420,16 +427,12 @@ function MarketAction({good, ship}) {
                 }}
                 className=''
               >
-                <select value={marketAction} onChange={(e) => setMarketAction(e.target.value)} className='mx-1 mt-0.5 p-1 py-2 rounded text-white bg-gray-700'>
-                  <option value={'buy'}>Buy</option>
-                  <option value={'sell'}>Sell</option>
-                  {/* <option value={'sellAll'}>Sell All</option> */}
-                </select>
+                <Button onClick={() => setMarketAction(marketAction === "buy"? "sell" : marketAction === "sell"? "sell_all" : "buy")}>{Text.capitalize(marketAction)}</Button>
                 <input
                   type='number'
                   min={0}
                   value={amount}
-                  hidden={marketAction == "sellAll"}
+                  hidden={marketAction == "sell_all"}
                   onChange={(e) => {
                     setAmount(Math.abs(e.currentTarget.value))
                   }} placeholder={good.tradeVolume}

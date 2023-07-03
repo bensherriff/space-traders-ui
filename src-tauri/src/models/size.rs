@@ -5,11 +5,11 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Size {
   #[serde(rename = "SMALL")]
-  Small,
+  Small = 1,
   #[serde(rename = "MODERATE")]
-  Moderate,
+  Moderate = 2,
   #[serde(rename = "LARGE")]
-  Large,
+  Large = 3,
 }
 
 impl Display for Size {

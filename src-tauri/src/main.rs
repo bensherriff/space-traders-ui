@@ -39,6 +39,9 @@ fn main() {
     Ok(val) => val == "true",
     Err(_) => false
   };
+  if debug {
+    println!("Debug mode enabled");
+  }
 
   let state = DataState {
     pool: connection_pool(),

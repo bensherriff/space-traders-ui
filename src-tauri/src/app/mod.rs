@@ -7,6 +7,7 @@ use petgraph::graph::NodeIndex;
 use tauri::State;
 
 use crate::api::requests::{ResponseObject, ErrorObject};
+use crate::models::ship::cooldown::Cooldown;
 use crate::models::survey::Survey;
 use crate::{DataState, models::waypoint::WaypointType};
 use crate::api::systems::{get_system, get_jump_gate};
@@ -85,25 +86,40 @@ pub async fn get_path_to_system(state: State<'_, DataState>, token: String, star
 }
 
 #[tauri::command]
-pub async fn auto_extract_resources(state: State<'_, DataState>, token: String, symbol: String, create_survey: bool) -> Result<bool, ()> {
+pub async fn auto_extract_resources(state: State<'_, DataState>, token: String, symbol: String, waypoint: String, create_survey: bool) -> Result<bool, ()> {
   debug!("Auto extracting resources for ship: {}", symbol);
 
-  async fn internal_extract(state: State<'_, DataState>, token: String, symbol: String, survey: Option<Survey>) -> bool {
+  async fn internal_extract(state: State<'_, DataState>, token: String, symbol: String, waypoint: String, survey: Option<Survey>) -> bool {
+    let mut internal_survey = survey;
+    debug!("Extracting resources for ship: {}", symbol);
     let mut cargo_full = false;
     while !cargo_full {
-      match crate::api::fleet::extract_resources(state.to_owned(), token.to_owned(), symbol.to_owned(), survey.to_owned()).await {
+      match crate::api::fleet::extract_resources(state.to_owned(), token.to_owned(), symbol.to_owned(), internal_survey.to_owned()).await {
         Ok(er) => {
           match &er.data {
             Some(extracted_cargo) => {
-              debug!("Extracted cargo: {:?}", extracted_cargo);
+              debug!("{} extracted {} units of {}", symbol, extracted_cargo.extraction.extraction_yield.units, extracted_cargo.extraction.extraction_yield.symbol);
               cargo_full = extracted_cargo.cargo.units >= extracted_cargo.cargo.capacity;
               if cargo_full {
+                debug!("{}'s cargo hull is full", symbol);
                 return true;
               } else {
-                thread::sleep(Duration::from_millis(extracted_cargo.cooldown.remaining_seconds.to_owned() as u64));
+                debug!("Extraction on cooldown for {} seconds", extracted_cargo.cooldown.remaining_seconds);
+                thread::sleep(Duration::from_secs(extracted_cargo.cooldown.remaining_seconds.to_owned() as u64));
               }
             }
-            None => {}
+            None => {
+              match &er.error {
+                Some(error) => {
+                  if error.code == 4221 {
+                    internal_survey = generate_survey(state.to_owned(), token.to_owned(), symbol.to_owned(), waypoint.to_owned()).await;
+                  } else {
+                    break;
+                  }
+                }
+                None => {}
+              }
+            }
           }
         }
         Err(err) => warn!("Error extracting resources: {:?}", err)
@@ -112,27 +128,50 @@ pub async fn auto_extract_resources(state: State<'_, DataState>, token: String, 
     return false;
   }
 
-  if create_survey {
-    let s = crate::api::fleet::create_survey(state.to_owned(), token.to_owned(), symbol.to_owned()).await;
+  fn choose_best_survey(surveys: Vec<Survey>) -> Option<Survey> {
+    debug!("Found {} {}", surveys.len(), if surveys.len() == 1 { "survey" } else { "surveys" });
+    if surveys.len() > 0 {
+      let mut best_survey = surveys[0].to_owned();
+      for survey in surveys.iter() {
+        if survey.size.to_owned() as u8 > best_survey.size.to_owned() as u8 {
+          best_survey = survey.to_owned();
+        }
+      }
+      Some(best_survey)
+    } else {
+      None
+    }
+  }
+
+  async fn generate_survey(state: State<'_, DataState>, token: String, symbol: String, waypoint: String) -> Option<Survey> {
+    let s = crate::api::fleet::create_survey(state.to_owned(), token.to_owned(), symbol.to_owned(), waypoint.to_owned()).await;
     match s {
       Ok(sr) => {
         match &sr.data {
           Some(survey_response) => {
-            debug!("Survey: {:?}", survey_response);
-            if survey_response.surveys.len() > 0 {
-              let survey = Some(survey_response.surveys[0].to_owned());
-              let cooldown = &survey_response.cooldown;
-              thread::sleep(Duration::from_millis(cooldown.remaining_seconds.to_owned() as u64));
-              return Ok(internal_extract(state.to_owned(), token.to_owned(), symbol.to_owned(), survey.to_owned()).await)
+            let survey = choose_best_survey(survey_response.surveys.to_owned()).unwrap();
+            let cooldown_remainder = &survey_response.cooldown.remaining_seconds;
+            debug!("Using survey: {} (cooldown remainder: {})", survey.signature, cooldown_remainder);
+            if cooldown_remainder > &0 {
+              thread::sleep(Duration::from_secs(cooldown_remainder.to_owned() as u64));
+              crate::data::fleet::update_survey(&state.pool, &survey.signature, &Cooldown { remaining_seconds: 0, ..survey_response.cooldown.to_owned() });
             }
+            Some(survey)
           }
-          None => {}
+          None => None
         }
       }
-      Err(err) => warn!("Error creating survey: {:?}", err)
+      Err(err) => {
+        warn!("Error creating survey: {:?}", err);
+        None
+      }
     }
-  } else {
-    return Ok(internal_extract(state.to_owned(), token.to_owned(), symbol.to_owned(), None).await)
   }
-  return Ok(false)
+
+  if create_survey {
+    let survey = generate_survey(state.to_owned(), token.to_owned(), symbol.to_owned(), waypoint.to_owned()).await;
+    Ok(internal_extract(state.to_owned(), token.to_owned(), symbol.to_owned(), waypoint.to_owned(), survey).await)
+  } else {
+    Ok(internal_extract(state.to_owned(), token.to_owned(), symbol.to_owned(), waypoint.to_owned(), None).await)
+  }
 }

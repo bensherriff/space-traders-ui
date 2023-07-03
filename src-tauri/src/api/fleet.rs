@@ -123,8 +123,8 @@ pub async fn dock_ship(state: State<'_, DataState>, token: String, symbol: Strin
 /// Surveys will eventually expire after a period of time.
 /// Multiple ships can use the same survey for extraction.
 #[tauri::command]
-pub async fn create_survey(state: State<'_, DataState>, token: String, symbol: String) -> Result<ResponseObject<SurveyResponse>, ()> {
-  match crate::data::fleet::get_surveys(&state.pool, &symbol) {
+pub async fn create_survey(state: State<'_, DataState>, token: String, symbol: String, waypoint: String) -> Result<ResponseObject<SurveyResponse>, ()> {
+  match crate::data::fleet::get_surveys(&state.pool, &waypoint) {
     Some(s) => {
       Ok(ResponseObject { data: Some(s), error: None, meta: None })
     }

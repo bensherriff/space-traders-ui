@@ -200,8 +200,8 @@ diesel::table! {
 }
 
 diesel::table! {
-  surveys (signature) {
-    signature -> Text,
+  surveys (survey_signature) {
+    survey_signature -> Text,
     waypoint_symbol -> Text,
     deposits -> Text,
     expiration -> Text,
@@ -209,7 +209,7 @@ diesel::table! {
     cooldown_ship_symbol -> Text,
     cooldown_total_seconds -> Integer,
     cooldown_remaining_seconds -> Integer,
-    cooldown_expiration -> Text,
+    cooldown_expiration -> Nullable<Text>,
   }
 }
 
