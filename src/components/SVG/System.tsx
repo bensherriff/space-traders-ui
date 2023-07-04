@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Text } from "../../js";
 import { v4 as uuidv4 } from 'uuid';
 import { SystemObject } from ".";
+import { ISystem, ISystemWaypoint } from "../../js/interfaces";
 
 const WIDTH = 1000;
 const HEIGHT = 1000;
@@ -11,8 +12,8 @@ const MAX_ZOOM = 20;
 const SCROLL_SENSITIVITY = 0.005;
 const HIDE_SATELLITES_ZOOM = 2.8;
 
-export default function SystemMap({ system }) {
-  const svgRef = useRef(null);
+export default function SystemMap({ system }: { system: ISystem }) {
+  const svgRef = useRef<any>(null);
   const [displayText, setDisplayText] = useState("");
   const [cameraZoom, setCameraZoom] = useState(6);
   const [cameraOffset, setCameraOffset] = useState({ x: 0, y: 0 });
@@ -35,7 +36,7 @@ export default function SystemMap({ system }) {
       let zoom = 6;
       let offset = {x: 0, y: 0};
 
-      function adjustZoom(zoomAmount, zoomFactor) {
+      function adjustZoom(zoomAmount?: number, zoomFactor?: number) {
         if (!isDragging) {
           if (zoomAmount) {
             zoom += zoomAmount;
@@ -48,26 +49,28 @@ export default function SystemMap({ system }) {
         }
       }
 
-      function getEventLocation(e) {
+      function getEventLocation(e: any) {
         if (e.touches && e.touches.length == 1) {
           return { x: e.touches[0].clientX, y: e.touches[0].clientY }
         } else if (e.clientX && e.clientY) {
           return { x: e.clientX, y: e.clientY }
+        } else {
+          return { x: 0, y: 0 }
         }
       }
 
-      function onPointerDown(event) {
+      function onPointerDown(event: any) {
         isDragging = true;
         dragStart.x = getEventLocation(event).x / zoom - offset.x;
         dragStart.y = getEventLocation(event).y / zoom - offset.y;
       }
 
-      function onPointerUp(event) {
+      function onPointerUp(event: any) {
         isDragging = false;
         lastZoom = zoom;
       }
 
-      function onPointerMove(event) {
+      function onPointerMove(event: any) {
         if (isDragging) {
           offset = {
             x: getEventLocation(event).x / zoom - dragStart.x,
@@ -77,18 +80,15 @@ export default function SystemMap({ system }) {
         }
       }
 
-      svg.addEventListener("wheel", (event) => adjustZoom(-event.deltaY*(SCROLL_SENSITIVITY*(zoom/3))));
+      svg.addEventListener("wheel", (event: any) => adjustZoom(-event.deltaY*(SCROLL_SENSITIVITY*(zoom/3))));
       svg.addEventListener("mousedown", onPointerDown);
       svg.addEventListener("mouseup", onPointerUp);
       svg.addEventListener("mousemove", onPointerMove);
 
-      document.getElementById( "solar-system" ).onwheel = function(event){
-        event.preventDefault();
-      };
-      
-      document.getElementById( "solar-system" ).onmousewheel = function(event){
-          event.preventDefault();
-      };
+      let solarSystemElement: HTMLElement | null = document.getElementById("solar-system");
+      if (solarSystemElement) {
+        solarSystemElement.onwheel = (event) => event.preventDefault();
+      }
     }
 
   }, []);
@@ -96,7 +96,7 @@ export default function SystemMap({ system }) {
   let previousOrbitalCoords = { x: 0, y: 0 };
   let orbitalCount = 1;
 
-  function calculateOrbitalRadius(waypoint, index) {
+  function calculateOrbitalRadius(waypoint: ISystemWaypoint, index: number) {
     if (waypoint.x == previousOrbitalCoords.x && waypoint.y == previousOrbitalCoords.y) {
       orbitalCount++;
     } else {
@@ -151,7 +151,7 @@ export default function SystemMap({ system }) {
   )
 }
 
-function Star({ system, setDisplayText=() => {}, cameraZoom, cameraOffset }) {
+function Star({ system, setDisplayText=() => {}, cameraZoom, cameraOffset }: { system: ISystem, setDisplayText?: any, cameraZoom: number, cameraOffset: { x: number, y: number } }) {
   const color = Text.systemTypeColor(system.type);
   return (
     <SystemObject
@@ -165,7 +165,7 @@ function Star({ system, setDisplayText=() => {}, cameraZoom, cameraOffset }) {
   )
 }
 
-function Waypoint({ waypoint, setDisplayText=() => {}, cameraZoom, cameraOffset }) {
+function Waypoint({ waypoint, setDisplayText=() => {}, cameraZoom, cameraOffset }: { waypoint: ISystemWaypoint, setDisplayText?: any, cameraZoom: number, cameraOffset: { x: number, y: number } }) {
   const navigate = useNavigate();
   const color = Text.waypointTypeColor(waypoint.type);
   const split = waypoint.symbol.split("-");
@@ -188,7 +188,7 @@ function Waypoint({ waypoint, setDisplayText=() => {}, cameraZoom, cameraOffset 
   )
 }
 
-function WaypointOrbit({ x=WIDTH/2, y=HEIGHT/2, cameraZoom, cameraOffset }) {
+function WaypointOrbit({ x=WIDTH/2, y=HEIGHT/2, cameraZoom, cameraOffset }: { x: number, y: number, cameraZoom: number, cameraOffset: { x: number, y: number } }) {
   const orbitRadius = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) * cameraZoom;
 
   return (
@@ -204,7 +204,7 @@ function WaypointOrbit({ x=WIDTH/2, y=HEIGHT/2, cameraZoom, cameraOffset }) {
   )
 }
 
-function Satellite({ waypoint, setDisplayText=() => {}, orbitRadius=5, cameraZoom, cameraOffset }) {
+function Satellite({ waypoint, setDisplayText=() => {}, orbitRadius=5, cameraZoom, cameraOffset }: { waypoint: ISystemWaypoint, setDisplayText?: any, orbitRadius: number, cameraZoom: number, cameraOffset: { x: number, y: number } }) {
   const navigate = useNavigate();
   const color = Text.waypointTypeColor(waypoint.type);
   const split = waypoint.symbol.split("-");
@@ -229,7 +229,7 @@ function Satellite({ waypoint, setDisplayText=() => {}, orbitRadius=5, cameraZoo
   )
 }
 
-function SatelliteOrbit({ x=WIDTH/2, y=HEIGHT/2, orbitRadius=5, cameraZoom, cameraOffset }) {
+function SatelliteOrbit({ x=WIDTH/2, y=HEIGHT/2, orbitRadius=5, cameraZoom, cameraOffset }: { x: number, y: number, orbitRadius: number, cameraZoom: number, cameraOffset: { x: number, y: number } }) {
   const planetX = WIDTH/2 + (x * cameraZoom);
   const planetY = HEIGHT/2 + (y * cameraZoom);
 

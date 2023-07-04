@@ -4,22 +4,26 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { Storage, Text } from '../js';
 import { ProgressBarWithLabel, ProgressBar } from './ProgressBar';
 import { Button, CountdownTimer } from '.';
+import { IResponse, IShip, ISystem, ISystemWaypoint } from '../js/interfaces';
 
-export function NavStatus({ship, setShip=() => {}, link = false}) {
+export function NavStatus({ship, setShip=() => {}, link = false}: {ship: IShip, setShip?: Function, link?: boolean}) {
   const timeout = (new Date(ship.nav.route.arrival).getTime()/1000 - Date.now()/1000);
 
   useEffect(() => {
-    if (timeout <= 0) {
-      invoke('get_ship_nav', { token: Storage.getToken(), symbol: ship.symbol }).then(response => {
-        if (response && response.data) {
-          setShip({
-            ...ship,
-            nav: response.data
-          });
-        }
-      });
-    }
+    getShipNav();
   }, []);
+
+  async function getShipNav() {
+    if (timeout <= 0) {
+      let response: IResponse = await invoke('get_ship_nav', { token: Storage.getToken(), symbol: ship.symbol });
+      if (response && response.data) {
+        setShip({
+          ...ship,
+          nav: response.data
+        });
+      }
+    }
+  }
 
   if (ship.nav.status === "IN_TRANSIT") {
     return (
@@ -44,7 +48,7 @@ export function NavStatus({ship, setShip=() => {}, link = false}) {
   }
 }
 
-export function CargoInfo({ship}) {
+export function CargoInfo({ship}: {ship: IShip}) {
   return (
     <div className='my-4 p-2 border-stone-900 border-2 text-l shadow-md bg-stone-700 rounded-xl'>
       <h1 className='text-lg mr-4'>Cargo</h1>
@@ -71,7 +75,7 @@ export function CargoInfo({ship}) {
   )
 }
 
-export function ModulesInfo({ship}) {
+export function ModulesInfo({ship}: {ship: IShip}) {
   return (
     <div className='w-full mr-0.5 p-2 border-stone-900 border-2 text-l shadow-md bg-stone-700 rounded-xl'>
       <h1 className='text-lg mr-4'>Modules</h1>
@@ -100,7 +104,7 @@ export function ModulesInfo({ship}) {
   )
 }
 
-export function MountsInfo({ship}) {
+export function MountsInfo({ship}: {ship: IShip}) {
   return (
     <div className='w-full ml-0.5 p-2 border-stone-900 border-2 text-l shadow-md bg-stone-700 rounded-xl'>
       <h1 className='text-lg mr-4'>Mounts</h1>
@@ -137,9 +141,9 @@ export function MountsInfo({ship}) {
   )
 }
 
-export function Navigation({ship, setShip}) {
-  const [system, setSystem] = useState(null);
-  const [waypoint, setWaypoint] = useState(null);
+export function Navigation({ship, setShip}: {ship: IShip, setShip: Function}) {
+  const [system, setSystem] = useState<ISystem | null>(null);
+  const [waypoint, setWaypoint] = useState<ISystemWaypoint | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -150,69 +154,63 @@ export function Navigation({ship, setShip}) {
   }, []);
 
   async function orbit_ship() {
-    invoke("orbit_ship", { token: Storage.getToken(), symbol: ship.symbol}).then(response => {
-      if (response && response.data) {
-        setShip({
-          ...ship,
-          nav: response.data.nav
-        });
-      }
-    });
+    let response: IResponse = await invoke("orbit_ship", { token: Storage.getToken(), symbol: ship.symbol});
+    if (response && response.data) {
+      setShip({
+        ...ship,
+        nav: response.data.nav
+      });
+    }
   }
 
   async function dock_ship() {
-    invoke("dock_ship", { token: Storage.getToken(), symbol: ship.symbol}).then(response => {
-      if (response && response.data) {
-        setShip({
-          ...ship,
-          nav: response.data.nav
-        });
-      }
-    });
+    let response: IResponse = await invoke("dock_ship", { token: Storage.getToken(), symbol: ship.symbol});
+    if (response && response.data) {
+      setShip({
+        ...ship,
+        nav: response.data.nav
+      });
+    }
   }
 
   async function get_system() {
-    invoke("get_system", { token: Storage.getToken(), system: ship.nav.systemSymbol }).then(response => {
-      if (response && response.data) {
-        setSystem(response.data);
-      }
-    });
+    let response: IResponse = await invoke("get_system", { token: Storage.getToken(), system: ship.nav.systemSymbol });
+    if (response && response.data) {
+      setSystem(response.data);
+    }
   }
 
   async function get_waypoint() {
-    invoke("get_waypoint", { token: Storage.getToken(), system: ship.nav.systemSymbol, waypoint: ship.nav.waypointSymbol }).then(response => {
-      if (response && response.data) {
-        setWaypoint(response.data);
-      }
-    });
+    let response: IResponse = await invoke("get_waypoint", { token: Storage.getToken(), system: ship.nav.systemSymbol, waypoint: ship.nav.waypointSymbol });
+    if (response && response.data) {
+      setWaypoint(response.data);
+    }
   }
 
-  async function navigate_ship(e) {
+  async function navigate_ship(e: any) {
     e.preventDefault();
     const destination = e.target['select-system'].value;
-    invoke("navigate_ship", { token: Storage.getToken(), symbol: ship.symbol, waypoint: destination, system: ship.nav.systemSymbol}).then(response => {
-      if (response && response.data) {
-        setShip({
-          ...ship,
-          fuel: {
-            ...ship.fuel,
-            current: response.data.fuel.current
-          },
-          nav: response.data.nav
-        });
-        const timeout = (new Date(ship.nav.route.arrival).getTime() - Math.min(new Date(ship.nav.route.departureTime).getTime(), Date.now()));
-        setTimeout(async () => {
-          invoke("get_ship_nav", { token: Storage.getToken(), symbol: ship.symbol }).then(response => {
-            if (response && response.data) {
-              setShip({
-                ...ship,
-                nav: response.data
-              })
-            }
+    let response: IResponse = await invoke("navigate_ship", { token: Storage.getToken(), symbol: ship.symbol, waypoint: destination, system: ship.nav.systemSymbol});
+    if (response && response.data) {
+      setShip({
+        ...ship,
+        fuel: {
+          ...ship.fuel,
+          current: response.data.fuel.current
+        },
+        nav: response.data.nav
+      });
+      const timeout = (new Date(ship.nav.route.arrival).getTime() - Math.min(new Date(ship.nav.route.departureTime).getTime(), Date.now()));
+      setTimeout(async () => {
+        let response: IResponse = await invoke("get_ship_nav", { token: Storage.getToken(), symbol: ship.symbol });
+        if (response && response.data) {
+          setShip({
+            ...ship,
+            nav: response.data
           });
-        }, timeout);
-      }
-    });
+        }
+      }, timeout);
+    }
   }
 
   return (
@@ -220,9 +218,9 @@ export function Navigation({ship, setShip}) {
       <h1 className='text-lg mr-4'>Navigation</h1>
       <NavStatus ship={ship} setShip={setShip} link={true}/>
       {ship.nav.status === "IN_ORBIT"? (
-        <Button className='ml-1' onClick={dock_ship}>Dock</Button>
+        <Button onClick={dock_ship}>Dock</Button>
       ): ship.nav.status === "DOCKED"? (
-        <Button className='ml-1' onClick={orbit_ship}>Orbit</Button>
+        <Button onClick={orbit_ship}>Orbit</Button>
       ): <></>}
       {system && system.waypoints && ship.nav.status !== "IN_TRANSIT" && ship.nav.status !== "DOCKED"? (
         <>
@@ -236,7 +234,7 @@ export function Navigation({ship, setShip}) {
                 }
               })}
             </select>
-            <Button className='ml-1' type='submit'>Navigate</Button>
+            <Button type='submit'>Navigate</Button>
           </form>
         </>
       ): <></>}
